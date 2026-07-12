@@ -539,3 +539,52 @@ Qwen gave a $30 coupon usable for 6 months at $4/mo = $24. Leaves $6 for Qwen AP
 | Prune old images | `ssh root@47.82.157.35 "docker system prune -a -f"` |
 | Check container status | `ssh root@47.82.157.35 "docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"` |
 | List GHCR tags | `TOKEN=$(curl -s "https://ghcr.io/token?scope=repository:hazeezadebayo/memtrace-simulith:pull" \| python3 -c "import sys,json; print(json.load(sys.stdin)['token'])") && curl -s -H "Authorization: Bearer $TOKEN" "https://ghcr.io/v2/hazeezadebayo/memtrace-simulith/tags/list" \| python3 -c "import sys,json; print(json.load(sys.stdin).get('tags',[]))"` |
+
+---
+
+# Part 10: Final Verification (What a Successful Deploy Looks Like)
+
+Once the pipeline completes and the container is healthy, these commands prove everything works:
+
+## Health check
+```bash
+curl -s http://47.82.157.35:3000/health
+```
+**Expected output:**
+```json
+{"status":"ok","db":"offline"}
+```
+
+## Dashboard (login page)
+```bash
+curl -s -L http://47.82.157.35:3000/simulith/workspace.html | head -5
+```
+**Expected output:**
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    ...
+    <title>Login | Simulith</title>
+```
+
+## Cheat Sheet — All Domains at a Glance
+
+| Domain | Where | URL |
+|---|---|---|
+| **Alibaba SAS** (live app) | Running container | `http://47.82.157.35:3000` |
+| **Alibaba SAS** (health check) | JSON status | `http://47.82.157.35:3000/health` |
+| **Alibaba SAS** (dashboard) | Login → workspace | `http://47.82.157.35:3000/simulith/workspace.html` |
+| **GitHub** (source code) | Git repo | `https://github.com/hazeezadebayo/memtrace-simulith` |
+| **GHCR** (container image) | Pre-built Docker image | `https://github.com/hazeezadebayo/memtrace-simulith/pkgs/container/memtrace-simulith` |
+| **GitHub Actions** (CI/CD pipeline) | Deploy logs | `https://github.com/hazeezadebayo/memtrace-simulith/actions` |
+
+## One Command to Deploy
+
+```bash
+git push
+```
+
+That's it. GitHub builds on 7GB runners, pushes to GHCR, SSHes into SAS, pulls and restarts. All 3 runtime errors (config.js, manifest.js, users.db permissions) are documented with fixes above. Zero to hero.
