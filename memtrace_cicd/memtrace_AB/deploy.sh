@@ -234,6 +234,9 @@ COPY . .
 # Ensure config.js exists (copy from example if absent)
 RUN test -f extension/env/config.js || cp extension/env/config.example.js extension/env/config.js
 
+# Ensure /app/data exists and is writable by node user (for libsql DBs through volume mount)
+RUN mkdir -p /app/data && chown -R node:node /app/data
+
 ENV PORT=3106
 EXPOSE 3106
 
