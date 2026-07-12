@@ -4,6 +4,7 @@
 
 **Repository:** `https://github.com/hazeezadebayo/memtrace-simulith`
 **Live site:** `http://47.82.157.35:3000`
+**GHCR Image:** `ghcr.io/hazeezadebayo/memtrace-simulith:latest`
 
 ---
 
@@ -11,7 +12,7 @@
 
 1. We wrote code → pushed to GitHub
 2. GitHub Actions builds a Docker image on their 7GB RAM servers (not our puny 1GB box)
-3. The image goes to GitHub Container Registry (ghcr.io)
+3. The image goes to GitHub Container Registry (ghcr.io) — public, no auth needed to pull
 4. GitHub Actions SSHes into our Alibaba SAS server and runs it
 5. Every `git push` re-deploys automatically
 
@@ -20,7 +21,13 @@
 git push
 ```
 
-That's it. Everything below is how we got there, why, and what to do if something breaks.
+**Errors we hit and what fixed them** (detailed in Part 8):
+
+| Error | Root cause | Fix |
+|---|---|---|
+| `ERR_MODULE_NOT_FOUND: config.js` | `.gitignore` excluded `extension/env/config.js`, so `actions/checkout` never fetched it → missing from Docker build | Remove pattern from `.gitignore`; add `RUN cp config.example.js` fallback |
+| `ERR_MODULE_NOT_FOUND: manifest.js` | `.gitignore` had bare `data/` matching ANY `data/` dir at any depth — killed `simulith/src/data/manifest.js` etc. | Change `data/` → `/data/` (root-only) + add `memtrace/data/` explicitly |
+| `SQLITE_CANTOPEN: /app/data/users.db` | `USER node` runs the container; `/app/data` dir didn't exist in image → volume mounted empty owned by root | Add `RUN mkdir -p /app/data && chown -R node:node /app/data` in Dockerfile |
 
 ---
 
@@ -39,6 +46,19 @@ We have a Node.js app (MemTrace) that simulates AI agents. It needs:
 **The contradiction:** Building the Docker image needs ~1.5GB RAM (because `node-llama-cpp` compiles C++ code). Running the app needs only ~400MB. If we build on the SAS server, it crashes mid-build (OOM = Out of Memory).
 
 **The solution:** Build on GitHub Actions (7GB RAM, free), push the finished image to a registry, and only pull+run on the SAS server.
+
+## How to reach the app from both worlds
+
+| Domain | What it is | URL |
+|---|---|---|
+| **GitHub** (source code) | Repository | `https://github.com/hazeezadebayo/memtrace-simulith` |
+| **GitHub Actions** (CI/CD logs) | Workflow runs | `https://github.com/hazeezadebayo/memtrace-simulith/actions` |
+| **GHCR** (container image) | Pre-built Docker image | `https://github.com/hazeezadebayo/memtrace-simulith/pkgs/container/memtrace-simulith` |
+| **Alibaba SAS** (live server) | Running container API | `http://47.82.157.35:3000` |
+| **Health check** | JSON status | `http://47.82.157.35:3000/health` |
+| **Workspace dashboard** | GUI landing page | `http://47.82.157.35:3000/simulith/workspace.html` |
+
+> **Note:** Port 3000 must be opened in the Alibaba SAS Console firewall (see Step 3 below).
 
 ---
 
@@ -66,10 +86,6 @@ memtrace-simulith/
 └── .gitignore
 ```
 
-**Why `memtrace/` is nested?** Because the project was originally structured that way. The Docker build context is `memtrace/` — that's where the `package.json` lives.
-
-**Why `memtrace_cicd/memtrace_AB/` is so deeply nested?** Because we made `memtrace_cicd` the umbrella folder for all CI/CD. `_AB` = Alibaba, `_HF` = HuggingFace. More professional than three loose folders at the root.
-
 ---
 
 # Part 3: Setting Up the SAS Server
@@ -84,15 +100,13 @@ In Alibaba Cloud Console → Simple Application Server:
 
 **Why Singapore?** Best international internet peering. Hong Kong has routing issues for non-Asia traffic. Japan is further from Qwen's API servers.
 
-**Why SAS and not ECS?** SAS bundles compute + storage + networking into one fixed price. No surprise bills. ECS is more flexible but charges separately for everything. For a hackathon, SAS is perfect.
-
 ## Step 2: Set root password
 
 SAS Console → your instance → **More** → **Reset Password**
 
 SAS instances have **no default password**. You MUST set one before you can SSH in.
 
-## Step 3: Open firewall ports
+## Step 3: Open firewall ports (IMPORTANT — easy to forget)
 
 SAS Console → your instance → Firewall → **Add Rule**:
 ```
@@ -102,20 +116,23 @@ Source: 0.0.0.0/0
 Purpose: MemTrace API
 ```
 
-Default rules already open 22 (SSH), 80 (HTTP), 443 (HTTPS). We need 3000 because that's where docker-compose maps the app.
+Default rules already open 22 (SSH), 80 (HTTP), 443 (HTTPS). We need 3000 because that's where docker-compose maps the app. **Without this rule, the API is unreachable from the internet** even though Docker is serving on the right port.
 
-## Step 4: SSH in and enable password auth (first time only)
+To verify the firewall is open:
+```bash
+nc -zv 47.82.157.35 3000
+# → Connection to 47.82.157.35 port 3000 [tcp/*] succeeded!
+```
+
+## Step 4: SSH in for the first time
 
 ```bash
-# From the SAS Console → Connect → Workbench (opens a browser terminal)
-# OR from your terminal once you set the password:
+# From your terminal once you set the password:
 ssh root@47.82.157.35
 
 # Once logged in, enable password login in SSH:
 sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
 systemctl restart sshd
-
-# Now SSH from your terminal works with a password
 ```
 
 **Why enable password auth?** SAS ships with SSH key-only auth. We temporarily need password auth to install our deploy key. After that, we turn password auth off again. Not necessary here since it's a hackathon box.
@@ -142,19 +159,11 @@ There are TWO SSH keys in play:
 ssh-keygen -t ed25519 -f ~/.ssh/memtrace_deploy -N "" -C "memtrace-gh-actions"
 ```
 
-**What this does:**
-- `-t ed25519` — creates an Ed25519 key (modern, fast, secure)
-- `-f ~/.ssh/memtrace_deploy` — saves it with this filename
-- `-N ""` — no passphrase (required for automation — GitHub can't type a password)
-- `-C "memtrace-gh-actions"` — a comment so you remember what it's for
-
 ## Install the public key on the SAS server
 
 ```bash
 ssh-copy-id -i ~/.ssh/memtrace_deploy.pub root@47.82.157.35
 ```
-
-**What this does:** Copies your public key to `/root/.ssh/authorized_keys` on the server. Now anyone holding the private key can SSH in without a password.
 
 **Test it:**
 ```bash
@@ -173,10 +182,6 @@ Copy the entire output (from `-----BEGIN OPENSSH PRIVATE KEY-----` to `-----END 
 
 # Part 5: GitHub Secrets
 
-## What are Secrets?
-
-GitHub Secrets are encrypted key-value pairs. Only GitHub Actions workflows can read them. Humans cannot see them once saved.
-
 Go to: `https://github.com/hazeezadebayo/memtrace-simulith/settings/secrets/actions`
 
 Add these **4 Repository Secrets**:
@@ -187,12 +192,6 @@ Add these **4 Repository Secrets**:
 | `SAS_USER` | `root` | SSH username |
 | `SAS_SSH_KEY` | (paste private key from `cat ~/.ssh/memtrace_deploy`) | GitHub uses this to SSH into SAS |
 | `QWEN_API_KEY` | `sk-...` | Qwen DashScope API key for LLM calls |
-
-**Why Repository Secrets and not Environment Secrets or Variables?**
-
-- **Repository secrets** are available to all workflows in the repo. Simple.
-- **Environment secrets** are scoped to a deployment environment (staging/prod). Overkill for a single server.
-- **Variables** are plaintext (unencrypted). Bad for SSH keys and API tokens.
 
 ---
 
@@ -206,21 +205,21 @@ File: `.github/workflows/deploy.yml`
 name: Deploy to Alibaba SAS
 on:
   push:
-    branches: [main]   # Triggers on every push to main
-  workflow_dispatch:    # Can also be triggered manually from GitHub UI
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest   # GitHub's 7GB RAM runner (free)
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write        # Needed to push to GHCR
     steps:
-      - name: Checkout repo
-      - name: Patch package.json          # Remove node-llama-cpp (save 1GB RAM)
-      - name: Log in to GHCR              # Use GITHUB_TOKEN (auto-generated)
-      - name: Build and push Docker image # → ghcr.io/hazeezadebayo/memtrace-simulith
-      - name: Deploy to Alibaba SAS       # SSH in, pull, run, health check
+      - uses: actions/checkout@v4
+      - name: Patch package.json   # Remove node-llama-cpp (saves 1GB RAM)
+      - name: Log in to GHCR       # Uses auto-generated GITHUB_TOKEN
+      - name: Build & push image   # → ghcr.io/hazeezadebayo/memtrace-simulith
+      - name: Deploy to SAS        # SSH in, pull, run, health check
 ```
 
 ## Step-by-step breakdown
@@ -229,7 +228,8 @@ jobs:
 ```yaml
 uses: actions/checkout@v4
 ```
-Downloads your code onto the GitHub runner.
+
+**Gotcha:** `actions/checkout@v4` respects `.gitignore`. Any file that is gitignored will **not** be present on the runner. This was the root cause of our first two ERR_MODULE_NOT_FOUND crashes (see Part 8).
 
 ### 2. Patch package.json
 ```bash
@@ -243,10 +243,7 @@ node -e "
 "
 ```
 
-**Why?** `node-llama-cpp` compiles C++ code during `npm install`. This needs ~1GB RAM and build tools (g++, cmake, make). Since we use Qwen's cloud API (not local models), this dependency is dead weight. Removing it:
-- Saves 1GB of RAM during build
-- Removes the need for build tools (smaller final image)
-- Makes the Dockerfile 4 lines instead of 10
+**Why?** `node-llama-cpp` compiles C++ code during `npm install`. This needs ~1GB RAM and build tools. Since we use Qwen's cloud API (not local models), this dependency is dead weight.
 
 ### 3. Log in to GitHub Container Registry
 ```yaml
@@ -257,9 +254,9 @@ with:
   password: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-**Why `GITHUB_TOKEN`?** Every workflow run gets a temporary token auto-generated. It has `packages: write` permission (set above), so it can push images to GHCR. No need to create a separate token.
+**Why `GITHUB_TOKEN`?** Auto-generated per workflow run with `packages: write` permission. No need to create a separate token.
 
-**Why not Docker Hub?** Docker Hub requires a paid account for private images. GHCR is free and integrates with GitHub. Since the repo is public, the image is public too — no auth needed to pull.
+**Why not Docker Hub?** Docker Hub requires a paid account for private images. GHCR is free and since the repo is public, the image is public too — no auth needed to pull on the SAS server.
 
 ### 4. Build and push Docker image
 ```yaml
@@ -273,23 +270,6 @@ with:
     ghcr.io/hazeezadebayo/memtrace-simulith:${{ github.sha }}
 ```
 
-**Why `Dockerfile.prod` and not `Dockerfile`?** The dev Dockerfile installs build tools (python3, make, g++, cmake) for compiling native modules. The prod Dockerfile is only 15 lines:
-```dockerfile
-FROM node:20-slim
-WORKDIR /app
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
-COPY package*.json ./
-RUN npm install --production && npm cache clean --force
-COPY . .
-ENV PORT=3106
-EXPOSE 3106
-HEALTHCHECK ... CMD node -e "require('http').get(...)"
-USER node
-CMD ["node", "api/memtrace_server.js"]
-```
-
-No build tools → smaller image (~400MB vs ~800MB). No Python, g++, cmake bloat.
-
 ### 5. Deploy to Alibaba SAS
 ```yaml
 uses: appleboy/ssh-action@v1.0.3
@@ -298,140 +278,204 @@ with:
   username: ${{ secrets.SAS_USER }}
   key: ${{ secrets.SAS_SSH_KEY }}
   script: |
-    # On the SAS server:
-    1. Write .env.prod with all config (LLM_PROVIDER, API_KEY, etc.)
-    2. Write docker-compose.yml
-    3. docker compose pull          # Get latest image from GHCR
-    4. docker compose down          # Stop old container
-    5. docker compose up -d         # Start new one
-    6. Health check: curl /health   # Verify it works
-```
-
-**Why `appleboy/ssh-action`?** It's the most popular SSH action on the GitHub Marketplace. Handles key auth, strict host checking, and script execution. We don't need to install SSH on the runner — it's all handled by the action.
-
-**Why write `.env.prod` inline?** Secrets should never be in the repo. `.env.prod` is created at deploy time with values from GitHub Secrets. It only exists on the SAS server, never in git.
-
----
-
-# Part 7: The Remaining Steps (What Happens on Push)
-
-When you run `git push`:
-
-## 1. Build Docker on GitHub runners
-```
-[1/6] GitHub checks out your code
-[2/6] Patches package.json (removes llama.cpp)
-[3/6] Builds Docker image using Dockerfile.prod
-      → npm install --production (only runtime deps)
-      → ~2 minutes, ~400MB image
-```
-
-**TL;DR:** `git push` → GitHub builds a Docker image.
-
-**Manual alternative:**
-```bash
-# If you wanted to build locally (not recommended — slow):
-cd memtrace && docker build -f docker/Dockerfile.prod -t memtrace:latest .
-```
-
-## 2. Push image to GHCR
-```
-[4/6] Tags image: ghcr.io/hazeezadebayo/memtrace-simulith:latest
-[4/6] Tags image: ghcr.io/hazeezadebayo/memtrace-simulith:<commit-sha>
-[4/6] Pushes both tags to GitHub Container Registry
-      → ~30 seconds
-```
-
-**TL;DR:** The image goes to ghcr.io (GitHub's free container registry).
-
-**View it:** `https://github.com/hazeezadebayo/memtrace-simulith/pkgs/container/memtrace-simulith`
-
-## 3. SSH into SAS, pull image, start container
-```
-[5/6] SSHes into root@47.82.157.35
-[5/6] docker compose pull          # Downloads ghcr.io image
-[5/6] docker compose down          # Stops old container
-[5/6] docker compose up -d         # Starts new one with 700MB RAM limit
-```
-
-**TL;DR:** SAS pulls the new image and restarts.
-
-**Why 700MB mem_limit?** SAS has 1GB total. The OS needs ~200MB, Docker uses ~100MB. The app needs ~400MB during simulation. 700MB is the safety limit — if the app leaks memory, Docker kills it before the whole server crashes.
-
-**Manual alternative if SSHing in directly:**
-```bash
-ssh root@47.82.157.35
-cd /opt/memtrace
-docker compose pull
-docker compose down --remove-orphans
-docker compose up -d
-```
-
-## 4. Health check → verify
-```
-[6/6] Every 2 seconds for 60 seconds:
-      curl http://localhost:3106/health
-      → Expect: {"status":"ok"}
-```
-
-**TL;DR:** Waits up to 60s for the app to start, then confirms it's alive.
-
-**Manual check:**
-```bash
-curl http://47.82.157.35:3000/health
-# → {"status":"ok","db":"offline"}
-```
-
-**Dashboard:**
-```bash
-http://47.82.157.35:3000/simulith/workspace.html
+    cat > /opt/memtrace/.env.prod << EOF
+    LLM_PROVIDER=qwen
+    QWEN_API_KEY=${{ secrets.QWEN_API_KEY }}
+    ...
+    EOF
+    docker compose -f /opt/memtrace/docker-compose.yml pull
+    docker compose -f /opt/memtrace/docker-compose.yml down
+    docker compose -f /opt/memtrace/docker-compose.yml up -d
+    # Health check loop (60s timeout):
+    for i in $(seq 1 30); do
+      curl -sf http://localhost:3106/health && break
+      sleep 2
+    done
 ```
 
 ---
 
-# Part 8: Troubleshooting
+# Part 7: The Production Dockerfile (with all fixes applied)
 
-## Push fails: "refusing to allow a Personal Access Token..."
+File: `memtrace/docker/Dockerfile.prod`
 
+```dockerfile
+FROM node:20-slim
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y curl && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY package*.json ./
+RUN npm install --production && \
+    npm cache clean --force && \
+    rm -rf /root/.npm /tmp/*
+
+COPY . .
+
+# Belt-and-suspenders: if config.js was gitignored at checkout time,
+# create it from the example template
+RUN test -f extension/env/config.js || \
+    cp extension/env/config.example.js extension/env/config.js
+
+# CRITICAL: the node user needs to write /app/data for libsql (SQLite)
+# This directory does not exist in git (it's gitignored as runtime data).
+# Without this mkdir, Docker's volume mounts as root and the node user
+# cannot create the database files → SQLITE_CANTOPEN
+RUN mkdir -p /app/data && chown -R node:node /app/data
+
+ENV PORT=3106
+EXPOSE 3106
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=60s \
+  CMD node -e "require('http').get('http://localhost:3106/health', \
+    r => { process.exit(r.statusCode === 200 ? 0 : 1) })\
+    .on('error', () => process.exit(1))"
+
+USER node
+CMD ["node", "api/memtrace_server.js"]
 ```
-! [remote rejected] main -> main (refusing to allow a Personal Access Token
-  to create or update workflow `.github/workflows/deploy.yml` without
-  `workflow` scope)
+
+Each fix addresses a specific runtime crash (see Part 8).
+
+---
+
+# Part 8: Troubleshooting — Every Error We Hit and How We Fixed It
+
+## Error 1: `ERR_MODULE_NOT_FOUND: config.js`
+
+**Symptom:** Container starts, then immediately crashes:
+```
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/app/extension/env/config.js'
 ```
 
-**Fix:** Your GitHub token needs the `workflow` scope. Go to `github.com/settings/tokens` → find token → check `workflow` → save.
+**Root cause:** The root `.gitignore` had:
+```
+# Extension Config
+memtrace/extension/env/config.js
+```
 
-## Push fails: "Invalid username or token"
+Since `actions/checkout@v4` respects `.gitignore`, the file was **never fetched** from GitHub onto the runner. When Docker copied the working directory with `COPY . .`, `config.js` was missing. (The file existed on disk locally but was untracked.)
 
-Your token is expired or the repo name changed. Update the token or use SSH:
+**Fix (2 layers):**
+
+1. **Remove the gitignore pattern** so the file gets checked out:
+   ```
+   # In .gitignore — comment out or delete the line:
+   # memtrace/extension/env/config.js
+   ```
+
+2. **Add a Dockerfile fallback** so the image builds even if the file is somehow still missing:
+   ```dockerfile
+   RUN test -f extension/env/config.js || \
+       cp extension/env/config.example.js extension/env/config.js
+   ```
+
+## Error 2: `ERR_MODULE_NOT_FOUND: manifest.js`
+
+**Symptom:** Same crash, different file:
+```
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/app/simulith/src/data/manifest.js'
+```
+
+**Root cause:** The root `.gitignore` had a bare `data/` on its own line:
+```
+data/
+```
+
+In `.gitignore` syntax, `data/` matches **any directory named `data` at any depth**. So it matched:
+- `memtrace/simulith/src/data/manifest.js` ← application data, should NOT be ignored
+- `memtrace/simulith/src/data/evidence.js` ← same
+- `memtrace/data/` ← runtime DBs, SHOULD be ignored
+
+**Fix:** Change `data/` to `/data/` (only matches at repo root) and explicitly add `memtrace/data/`:
+```
+/data/
+memtrace/data/
+```
+
+Also update `.dockerignore` (same issue, same fix):
+```
+/data/     ← was bare data/
+```
+
+## Error 3: `SQLITE_CANTOPEN: /app/data/users.db`
+
+**Symptom:** Container runs long enough for the health check to pass, then libsql crashes:
+```
+Error: ConnectionFailed("Unable to open connection to local database /app/data/users.db: 14")
+```
+
+Error code `14` = SQLITE_CANTOPEN. The database file cannot be created or opened.
+
+**Root cause:** The Dockerfile ends with `USER node` for security. The `node` user writes to `/app/data/` for the SQLite database. However:
+1. `/app/data/` did not exist in the image (it's `memtrace/data/`, which is gitignored and dockerignored)
+2. Docker named volumes are created as `root:root` on first mount
+3. If the image directory doesn't exist, the volume is empty and owned by root
+4. The `node` user tries to create `users.db` in a root-owned directory → permission denied → SQLITE_CANTOPEN
+
+**Fix:** Create the directory in the Dockerfile and set ownership before switching to the `node` user:
+```dockerfile
+RUN mkdir -p /app/data && chown -R node:node /app/data
+```
+
+**Why this works:** When Docker initializes a named volume on first mount, it copies the contents of the image's directory into the volume. If `/app/data` exists and is owned by `node:node`, the volume will have the same ownership, and the `node` user inside the container can write to it freely.
+
+## Error 4: JWT secret auto-generated (not an error)
+
+**Observation in logs:**
+```
+[Auth] New JWT secret autonomously generated and persisted.
+```
+
+The app generates a JWT secret on first run and persists it to `/app/data/.jwt_secret`. This is **by design** — the secret is created by the app itself, not injected via config. It persists across restarts because of the named volume mount. No action needed.
+
+## Debugging workflow failures
+
+### Live log access (no GitHub login needed on SAS):
+
 ```bash
-git remote set-url origin git@github.com:hazeezadebayo/memtrace-simulith.git
+# Check container status
+ssh -i ~/.ssh/memtrace_deploy root@47.82.157.35 \
+  "docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
+
+# View last 50 lines of app logs
+ssh -i ~/.ssh/memtrace_deploy root@47.82.157.35 \
+  "docker compose -f /opt/memtrace/docker-compose.yml logs --tail=50 api"
+
+# Tail live logs
+ssh -i ~/.ssh/memtrace_deploy root@47.82.157.35 \
+  "docker compose -f /opt/memtrace/docker-compose.yml logs -f api"
 ```
 
-## Workflow fails at "Build and push" step
-
-Check the workflow logs at `https://github.com/hazeezadebayo/memtrace-simulith/actions`. Most common issue: the `permissions: packages: write` block is missing.
-
-## Container won't start (health check fails)
+### Verify the image on GHCR
 
 ```bash
-ssh root@47.82.157.35
-cd /opt/memtrace
-docker compose logs api --tail=50
+# List all tags pushed to GHCR
+TOKEN=$(curl -s "https://ghcr.io/token?scope=repository:hazeezadebayo/memtrace-simulith:pull" | \
+  python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "https://ghcr.io/v2/hazeezadebayo/memtrace-simulith/tags/list" | \
+  python3 -c "import sys,json; print(json.load(sys.stdin).get('tags',[]))"
 ```
 
-Common issues:
-- API_KEY is wrong in `.env.prod`
-- Port 3106 is already in use
-- Out of memory (check `docker stats`)
+### Check the docker-compose.yml on SAS
 
-## SAS ran out of disk space
-
-30 GB fills up fast with old Docker images:
 ```bash
-ssh root@47.82.157.35
-docker system prune -a -f   # Removes ALL unused images
+ssh -i ~/.ssh/memtrace_deploy root@47.82.157.35 \
+  "cat /opt/memtrace/docker-compose.yml"
 ```
+
+## Other known issues
+
+| Issue | Fix |
+|---|---|
+| Push fails: "refusing to allow a PAT to create workflow" | Your GitHub token needs the `workflow` scope. Go to `github.com/settings/tokens` |
+| Push fails: "Invalid username or token" | Token expired or repo name changed. Switch to SSH remote: `git remote set-url origin git@github.com:hazeezadebayo/memtrace-simulith.git` |
+| Workflow fails at "Build and push" | Missing `permissions: packages: write` in the workflow. Check the top-level `jobs.deploy.permissions` block |
+| SAS ran out of disk space | 30 GB fills fast with old Docker images: `docker system prune -a -f` |
+| API unreachable from browser | Did you open port 3000 in SAS Console → Firewall? |
 
 ---
 
@@ -445,38 +489,53 @@ docker system prune -a -f   # Removes ALL unused images
 
 Security best practice. Running as root inside the container is dangerous — if someone exploits a vulnerability in Node.js, they get root access. The `node` user has no special permissions.
 
+**But this caused Error 3** (`SQLITE_CANTOPEN`). The fix is `RUN mkdir -p /app/data && chown -R node:node /app/data` before the `USER node` line.
+
 ## Why a named volume (`memtrace_data`) instead of a bind mount?
 
 Named volumes persist across container restarts and are managed by Docker. The SQLite database and JWT secret live here. If the container crashes and restarts, the data survives.
 
 ## Why Singapore region?
 
-Best international peering. Hong Kong has intermittent packet loss for non-Asia traffic. Japan is further from Qwen's API endpoint (Singapore also has lower latency).
+Best international peering. Hong Kong has intermittent packet loss for non-Asia traffic. Japan is further from Qwen's API endpoint.
+
+## Why `data/` in `.gitignore` must be `/data/` (root-only)?
+
+A bare `data/` matches `any/path/to/data/` recursively. This accidentally gitignores app data files like `simulith/src/data/manifest.js`. Adding a leading slash (`/data/`) anchors it to the repo root. Explicitly list non-root data dirs (`memtrace/data/`) if they should still be ignored.
 
 ## Why 6-month subscription?
 
 Qwen gave a $30 coupon usable for 6 months at $4/mo = $24. Leaves $6 for Qwen API calls. Hackathon judging ends August 7, 2026 — 6 months covers submission + any post-hackathon demo time.
 
-## Why `memtrace_cicd/memtrace_AB/` and `memtrace_cicd/memtrace_HF/`?
-
-Keeps the project root clean. Instead of three loose folders (`memtrace_cicd`, `memtrace_hackathon_cicd`, `.github`), CI/CD tools are grouped under the `memtrace_cicd` umbrella. `_AB` = Alibaba, `_HF` = HuggingFace. Self-documenting.
-
 ---
 
 # Quick Reference
 
+## Links
+
+| What | URL |
+|---|---|
+| **GitHub Repository** | `https://github.com/hazeezadebayo/memtrace-simulith` |
+| **GitHub Actions (CI/CD logs)** | `https://github.com/hazeezadebayo/memtrace-simulith/actions` |
+| **GHCR (container images)** | `https://github.com/hazeezadebayo/memtrace-simulith/pkgs/container/memtrace-simulith` |
+| **Live API (Alibaba SAS)** | `http://47.82.157.35:3000` |
+| **Health check endpoint** | `http://47.82.157.35:3000/health` |
+| **Workspace dashboard** | `http://47.82.157.35:3000/simulith/workspace.html` |
+| **Alibaba SAS Console** | `https://ecs.console.aliyun.com/simple` |
+| **Qwen API Keys** | `https://home.qwencloud.com/api-keys` |
+
+## Commands
+
 | Action | Command |
 |---|---|
 | Deploy | `git push` |
-| Check deploy status | `https://github.com/hazeezadebayo/memtrace-simulith/actions` |
-| View live site | `http://47.82.157.35:3000` |
-| SSH into SAS | `ssh root@47.82.157.35` |
-| View app logs | `ssh root@47.82.157.35 "docker compose -f /opt/memtrace/docker-compose.yml logs -f api"` |
-| Restart manually | `ssh root@47.82.157.35 "cd /opt/memtrace && docker compose up -d"` |
+| Check deploy status | Open `https://github.com/hazeezadebayo/memtrace-simulith/actions` |
+| SSH into SAS | `ssh -i ~/.ssh/memtrace_deploy root@47.82.157.35` |
+| View app logs (live) | `ssh root@47.82.157.35 "docker compose -f /opt/memtrace/docker-compose.yml logs -f api"` |
+| View last 50 log lines | `ssh root@47.82.157.35 "docker compose -f /opt/memtrace/docker-compose.yml logs --tail=50 api"` |
+| Restart manually | `ssh root@47.82.157.35 "docker compose -f /opt/memtrace/docker-compose.yml up -d --force-recreate"` |
+| Health check (ext) | `curl http://47.82.157.35:3000/health` |
+| Health check (int) | `ssh root@47.82.157.35 "curl -s http://localhost:3106/health"` |
 | Prune old images | `ssh root@47.82.157.35 "docker system prune -a -f"` |
-| Health check | `curl http://47.82.157.35:3000/health` |
-| Dashboard | `http://47.82.157.35:3000/simulith/workspace.html` |
-| GHCR packages | `https://github.com/hazeezadebayo/memtrace-simulith/pkgs/container/memtrace-simulith` |
-| GitHub repo | `https://github.com/hazeezadebayo/memtrace-simulith` |
-| Alibaba Console | [SAS Dashboard](https://ecs.console.aliyun.com/simple) |
-| Qwen API Keys | `https://home.qwencloud.com/api-keys` |
+| Check container status | `ssh root@47.82.157.35 "docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"` |
+| List GHCR tags | `TOKEN=$(curl -s "https://ghcr.io/token?scope=repository:hazeezadebayo/memtrace-simulith:pull" \| python3 -c "import sys,json; print(json.load(sys.stdin)['token'])") && curl -s -H "Authorization: Bearer $TOKEN" "https://ghcr.io/v2/hazeezadebayo/memtrace-simulith/tags/list" \| python3 -c "import sys,json; print(json.load(sys.stdin).get('tags',[]))"` |
