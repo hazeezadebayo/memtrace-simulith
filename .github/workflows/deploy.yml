@@ -115,7 +115,7 @@ jobs:
             cat > "$DEPLOY_DIR/docker-compose.yml" << 'ENDCOMPOSE'
             services:
               api:
-                image: ghcr.io/hazeezadebayo/memtrace:latest
+                image: ghcr.io/hazeezadebayo/memtrace-simulith:latest
                 container_name: memtrace_api
                 ports:
                   - "3000:3106"

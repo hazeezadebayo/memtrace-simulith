@@ -10,7 +10,7 @@ This document outlines all the commands and steps used to successfully initializ
 
 ## Project Information
 - **Repository Name**: memtrace
-- **GitHub URL**: https://github.com/hazeezadebayo/memtrace.git
+- **GitHub URL**: https://github.com/hazeezadebayo/memtrace-simulith.git
 - **Local Path**: `/home/azeez/ws/dev_env/py_code/projects/memtrace`
 
 ## Step-by-Step Commands Executed
@@ -113,7 +113,7 @@ git commit -m "Remove zip archive files - keep only source code"
 ### 9. Add Remote Repository
 
 ```bash
-git remote add origin https://github.com/hazeezadebayo/memtrace.git
+git remote add origin https://github.com/hazeezadebayo/memtrace-simulith.git
 ```
 
 **Result**: Remote `origin` configured pointing to GitHub repository

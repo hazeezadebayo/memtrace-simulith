@@ -1,6 +1,6 @@
 services:
   api:
-    image: ghcr.io/hazeezadebayo/memtrace:latest
+    image: ghcr.io/hazeezadebayo/memtrace-simulith:latest
     container_name: memtrace_api
     ports:
       - "${HOST_PORT:-3000}:3106"
