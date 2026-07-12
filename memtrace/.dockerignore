@@ -32,7 +32,7 @@ models/**/*.onnx
 models/**/*.pt
 
 # ── Runtime Data (generated at runtime, persists via volume mount) ──────────
-data/
+/data/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
