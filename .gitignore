@@ -65,6 +65,7 @@ Thumbs.db
 *.db
 *.log
 /data/
+memtrace/data/
 logs/
 
 # Build artifacts
