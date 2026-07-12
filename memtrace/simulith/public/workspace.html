@@ -1,0 +1,1155 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description"
+    content="MemTrace Decision Simulator - Universal Mesh Intelligence Engine powered by your memory base." />
+  <title>Simulith | Council Workspace</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* ── Mesh Additions ─────────────────────────────────── */
+    .mode-toggle {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: 1rem;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: .45rem;
+      font-size: .7rem;
+      letter-spacing: .08em;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: .2s;
+      font-family: var(--font-mono);
+    }
+
+    #btn-mode-council.active {
+      background: var(--accent-orange);
+      border-color: var(--accent-orange);
+      color: #000;
+      font-weight: 700;
+    }
+
+    #btn-mode-mesh.active {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+      color: #000;
+      font-weight: 700;
+    }
+
+    /* ── Mode colours ─────────────────────────────────────── */
+    #btn-mode-tree {
+      border-color: #7c7c7c;
+      color: #7c7c7c;
+    }
+
+    #btn-mode-tree.active {
+      background: #7c7c7c;
+      border-color: #7c7c7c;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    #btn-mode-tree:hover:not(.active) {
+      background: rgba(124, 124, 124, .12);
+    }
+
+    #btn-mode-router, #btn-mode-automation {
+      border-color: #7c7c7c;
+      color: #7c7c7c;
+      box-shadow: 4px 4px 0px #7c7c7c !important;
+    }
+
+    #btn-mode-router.active, #btn-mode-automation.active {
+      background: #000 !important;
+      border-color: #000 !important;
+      color: #fff !important;
+      box-shadow: 4px 4px 0px #7c7c7c !important;
+      font-weight: 700;
+    }
+
+    #btn-mode-router:hover:not(.active), #btn-mode-automation:hover:not(.active) {
+      background: rgba(124, 124, 124, .12) !important;
+    }
+
+    /* ── Mesh Mode params ─────────────────────────────────── */
+    .mesh-params {
+      display: none;
+    }
+
+    .mesh-params.visible {
+      display: block;
+    }
+
+    .council-params {
+      display: block;
+    }
+
+    .council-params.hidden {
+      display: none;
+    }
+
+    /* ── Tree Mode params (prefix: tree-) ────────────────── */
+    /* Variables: tree-decision, tree-context, tree-domain,   */
+    /*            tree-depth, tree-branch, tree-status        */
+    /* Council vars (unchanged): question, branch-count,      */
+    /*   persona-count, facts, evidence                       */
+    /* Mesh vars (unchanged): agent-count, tick-count         */
+    .tree-params {
+      display: none;
+    }
+
+    .tree-params.visible {
+      display: block;
+    }
+
+    .tree-node-prob {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      fill: var(--text-primary);
+      font-weight: 700;
+    }
+
+    /* Mesh Feed */
+    #mesh-feed-panel {
+      margin-top: 1.5rem;
+      display: none;
+    }
+
+    #mesh-feed-panel.visible {
+      display: block;
+    }
+
+    .feed-scroller {
+      height: 670px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: .6rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent-orange) transparent;
+    }
+
+    .feed-post {
+      border-left: 3px solid var(--border);
+      padding: .6rem .8rem;
+      background: rgba(255, 255, 255, .03);
+      border-radius: 0 4px 4px 0;
+      cursor: pointer;
+      transition: .15s;
+    }
+
+    .feed-post:hover {
+      background: rgba(255, 180, 50, .06);
+      border-left-color: var(--accent-orange);
+    }
+
+    .feed-post.type-disagree {
+      border-left-color: #e05c5c;
+    }
+
+    .feed-post.type-agree {
+      border-left-color: #4caf85;
+    }
+
+    .feed-post.type-like {
+      border-left-color: #7c9ae0;
+    }
+
+    .feed-post-meta {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: .3rem;
+      flex-wrap: wrap;
+    }
+
+    .feed-agent-name {
+      font-weight: 700;
+      font-size: .8rem;
+      color: var(--accent-orange);
+    }
+
+    .feed-platform-badge {
+      font-size: .6rem;
+      padding: .1rem .35rem;
+      border-radius: 2px;
+      font-family: var(--font-mono);
+      letter-spacing: .05em;
+    }
+
+    .feed-platform-badge.twitter {
+      background: #1a1a2e;
+      color: #6cb2f7;
+      border: 1px solid #6cb2f7;
+    }
+
+    .feed-platform-badge.reddit {
+      background: #1a1210;
+      color: #ff7043;
+      border: 1px solid #ff7043;
+    }
+
+    .feed-platform-badge.hn {
+      background: #1a1710;
+      color: #ff9800;
+      border: 1px solid #ff9800;
+    }
+
+    .feed-platform-badge.discord {
+      background: #151020;
+      color: #9c88ff;
+      border: 1px solid #9c88ff;
+    }
+
+    .feed-platform-badge.market {
+      background: #101a12;
+      color: #66bb6a;
+      border: 1px solid #66bb6a;
+    }
+
+    .feed-platform-badge.facebook {
+      background: #132038;
+      color: #1877F2;
+      border: 1px solid #1877F2;
+    }
+
+    .feed-tick {
+      font-size: .6rem;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .feed-post-text {
+      font-size: .82rem;
+      line-height: 1.5;
+    }
+
+    .feed-reaction {
+      border-left-color: transparent;
+      background: rgba(0, 0, 0, .15);
+      margin-left: 1rem;
+    }
+
+    /* Agent Inspector */
+    #agent-inspector {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 360px;
+      height: 100vh;
+      background: #FFF;
+      border-left: var(--border-width) solid var(--border-color);
+      padding: 1.5rem;
+      overflow-y: auto;
+      transform: translateX(100%);
+      transition: .25s cubic-bezier(.4, 0, .2, 1);
+      z-index: 2000;
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.15);
+    }
+
+    #agent-inspector.open {
+      transform: translateX(0);
+    }
+
+    .inspector-close {
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.2rem;
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+    }
+
+    .belief-bar {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin: .25rem 0;
+      font-size: .72rem;
+    }
+
+    .belief-bar-track {
+      flex: 1;
+      height: 6px;
+      background: #EEE;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .belief-bar-fill {
+      height: 100%;
+      transition: .4s;
+    }
+
+    .belief-positive {
+      background: var(--accent-green);
+    }
+
+    .belief-negative {
+      background: #e05c5c;
+    }
+
+    /* Chat Modal */
+    #chat-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 3000;
+      background: rgba(0, 0, 0, .65);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+    }
+
+    #chat-modal.open {
+      display: flex;
+    }
+
+    .chat-box {
+      background: #FFF;
+      border: var(--border-width) solid var(--border-color);
+      box-shadow: 8px 8px 0px #000;
+      width: 540px;
+      max-width: 95vw;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .chat-history {
+      height: 240px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: .6rem;
+      font-size: .82rem;
+      border: 2px solid var(--border-color);
+      padding: .75rem;
+      background: #F9F9F9;
+    }
+
+    .chat-msg {
+      padding: .4rem .7rem;
+      border-radius: 4px;
+      max-width: 85%;
+      line-height: 1.4;
+    }
+
+    .chat-msg.user {
+      align-self: flex-end;
+      background: var(--accent-orange);
+      color: #000;
+      font-weight: 700;
+      border: 1px solid var(--border-color);
+    }
+
+    .chat-msg.agent {
+      align-self: flex-start;
+      background: #EAEAEA;
+      color: var(--text-dark);
+      border: 1px solid var(--border-color);
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: .5rem;
+    }
+
+    .chat-input-row input {
+      flex: 1;
+    }
+
+    .chat-msg.typing {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      min-height: 24px;
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      background-color: var(--text-secondary);
+      border-radius: 50%;
+      animation: typingBounce 1.4s infinite ease-in-out both;
+    }
+
+    .typing-dot:nth-child(1) {
+      animation-delay: -0.32s;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation-delay: -0.16s;
+    }
+
+    @keyframes typingBounce {
+
+      0%,
+      80%,
+      100% {
+        transform: scale(0);
+      }
+
+      40% {
+        transform: scale(1);
+      }
+    }
+
+    /* KDE flow strips */
+    .tree-flow-header {
+      font-family: var(--font-mono);
+      font-size: .63rem;
+      letter-spacing: .07em;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+
+    .tree-flow-strip {
+      margin-bottom: 1.2rem;
+    }
+
+    .tree-flow-strip-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: .3rem;
+    }
+
+    .tree-flow-var-name {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      font-weight: 700;
+    }
+
+    .tree-flow-spread {
+      font-size: .6rem;
+      font-family: var(--font-mono);
+      color: var(--text-secondary);
+    }
+
+    .tree-flow-track {
+      position: relative;
+      height: 44px;
+      background: rgba(255, 255, 255, .03);
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .tree-flow-kde {
+      position: absolute;
+      inset: 0;
+    }
+
+    .tree-flow-mean-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: rgba(255, 255, 255, .35);
+      transform: translateX(-50%);
+    }
+
+    /* Scatter tooltip */
+    #tree-scatter-tooltip {
+      position: fixed;
+      background: #111;
+      border: 1px solid #7c7c7c;
+      color: #fff;
+      padding: .45rem .6rem;
+      font-size: .7rem;
+      font-family: var(--font-mono);
+      pointer-events: none;
+      z-index: 5000;
+      max-width: 200px;
+      display: none;
+      line-height: 1.5;
+    }
+
+    /* Tree node detail drawer */
+    #tree-node-drawer {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 320px;
+      height: 100vh;
+      overflow-y: auto;
+      background: #FFF;
+      border-left: var(--border-width) solid var(--border-color);
+      padding: 1.5rem;
+      transform: translateX(100%);
+      transition: .25s cubic-bezier(.4, 0, .2, 1);
+      z-index: 4000;
+      box-shadow: -8px 0 24px rgba(0, 0, 0, .2);
+    }
+
+    #tree-node-drawer.open {
+      transform: translateX(0);
+    }
+
+    #tree-node-drawer-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 1.1rem;
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+    }
+
+    .tree-drawer-section {
+      margin-bottom: .9rem;
+      padding-bottom: .9rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .tree-drawer-label {
+      font-size: .58rem;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-secondary);
+      margin-bottom: .35rem;
+    }
+
+    .tree-drawer-var-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: .73rem;
+      padding: .18rem 0;
+      font-family: var(--font-mono);
+    }
+
+    .tree-var-bar-wrap {
+      width: 72px;
+      height: 4px;
+      background: rgba(255, 255, 255, .08);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .tree-var-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: #7c7c7c;
+    }
+
+    .tree-util-pill {
+      font-size: .58rem;
+      font-family: var(--font-mono);
+      padding: .1rem .28rem;
+      border-radius: 2px;
+      border: 1px solid;
+      display: inline-block;
+      margin: .1rem;
+    }
+
+    .tree-util-pill.pos {
+      color: #3ecfb2;
+      border-color: #3ecfb2;
+      background: rgba(62, 207, 178, .08);
+    }
+
+    .tree-util-pill.neg {
+      color: #e05c5c;
+      border-color: #e05c5c;
+      background: rgba(224, 92, 92, .08);
+    }
+
+    .tree-util-pill.neu {
+      color: var(--text-secondary);
+      border-color: var(--border-color);
+    }
+
+    /* SVG tree */
+    .tree-edge {
+      fill: none;
+      stroke: var(--border-color);
+      stroke-width: 1;
+    }
+
+    .tree-node-rect {
+      fill: var(--bg-surface);
+      stroke: var(--border-color);
+      stroke-width: 1.5;
+    }
+
+    .tree-node-rect.root {
+      stroke: #7c7c7c;
+      stroke-width: 2.5;
+    }
+
+    .tree-node-op {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      fill: #3ecfb2;
+    }
+
+    .tree-node-prob {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      fill: var(--text-primary);
+      font-weight: 700;
+    }
+
+    /* Mesh report cards */
+    .verdict-card {
+      background: linear-gradient(135deg, rgba(255, 180, 50, .08), rgba(76, 175, 133, .08));
+      border: var(--border-width) solid var(--border-color);
+      box-shadow: 6px 6px 0px #000;
+      padding: 1.2rem;
+    }
+
+    .platform-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      margin-top: .5rem;
+    }
+
+    .platform-chip {
+      padding: .3rem .6rem;
+      border: 1px solid var(--border-color);
+      font-size: .72rem;
+      font-family: var(--font-mono);
+      background: #FFF;
+    }
+
+    .agent-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: .7rem;
+    }
+
+    .agent-card {
+      border: 2px solid var(--border-color);
+      padding: .7rem;
+      cursor: pointer;
+      transition: .15s;
+      background: #FFF;
+    }
+
+    .agent-card:hover {
+      border-color: var(--accent-orange);
+      background: rgba(255, 180, 50, .04);
+    }
+
+    /* Interview Transcript Panel */
+    #interview-panel {
+      margin-top: 1rem;
+      display: none;
+    }
+
+    #interview-panel.visible {
+      display: block;
+    }
+
+    .interview-card {
+      border: 1px solid rgba(156, 136, 255, 0.3);
+      background: rgba(156, 136, 255, 0.04);
+      border-radius: 4px;
+      padding: .8rem 1rem;
+      margin-bottom: .7rem;
+    }
+
+    .interview-card-header {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: .6rem;
+      flex-wrap: wrap;
+    }
+
+    .interview-name {
+      font-weight: 700;
+      font-size: .8rem;
+      color: #9c88ff;
+    }
+
+    .interview-branch {
+      font-size: .65rem;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .interview-stance-support {
+      color: #4caf85;
+      font-weight: 700;
+      font-size: .7rem;
+      font-family: var(--font-mono);
+    }
+
+    .interview-stance-pushback {
+      color: #e05c5c;
+      font-weight: 700;
+      font-size: .7rem;
+      font-family: var(--font-mono);
+    }
+
+    .interview-row {
+      margin-bottom: .45rem;
+      font-size: .78rem;
+      line-height: 1.45;
+    }
+
+    .interview-label {
+      font-size: .6rem;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+      color: var(--text-secondary);
+      margin-bottom: .1rem;
+    }
+
+    /* Divergence Tabs Styling */
+    .divergence-tabs-nav {
+      display: flex;
+      gap: 0.5rem;
+      margin: 2rem 0 1rem;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 0.5rem;
+    }
+    .divergence-tab-btn {
+      padding: 0.6rem 1.2rem;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      background: transparent;
+      border: 1px dashed var(--border-color);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      transition: all 0.2s ease-in-out;
+    }
+    .divergence-tab-btn:hover {
+      background: rgba(124, 124, 124, 0.08);
+      color: var(--text-primary);
+    }
+    .divergence-tab-btn.active {
+      background: #000 !important;
+      color: #fff !important;
+      border-style: solid !important;
+      border-color: #000 !important;
+      box-shadow: 4px 4px 0px #7c7c7c !important;
+      font-weight: 700;
+    }
+    .divergence-tab-content {
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="workspace-layout">
+
+    <!-- Left Sidebar -->
+    <aside class="workspace-sidebar">
+      <header>
+        <div class="status" id="btn-home-logo-status" style="color: var(--accent-orange); cursor: pointer;"
+          title="Back to Workspace">TRAJECTORY ANALYSIS</div>
+        <h1 id="btn-home-logo-title" style="cursor: pointer;" title="Back to Workspace">Simulith</h1>
+        <div class="user-controls"
+          style="margin-top: 1rem; display: flex; justify-content: space-between; flex-wrap: wrap; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+          <button type="button" class="ghost tiny" id="btn-profile" title="Profile">👤</button>
+          <button type="button" class="ghost tiny" id="btn-admin" title="Admin Dashboard"
+            style="display:none;">⚙️</button>
+          <button type="button" class="ghost tiny" id="btn-samples" title="Preset Samples">🧪</button>
+          <button type="button" class="ghost tiny" id="btn-clear-screen" title="Clear Screen">🧹</button>
+          <button type="button" class="ghost tiny" id="btn-extension" title="Extension View">🧩</button>
+          <button type="button" class="ghost tiny" id="btn-modes-toggle" title="Select Operating Mode">🎛️</button>
+          <button type="button" class="ghost tiny" id="btn-signout" title="Sign Out">🚪</button>
+        </div>
+
+        <div id="samples-toolbar"
+          style="display: none; gap: 0.4rem; align-items: center; justify-content: center; flex-wrap: wrap; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);">
+          <button type="button" class="ghost tiny" data-sample="startup" title="Startup"
+            style="font-size: 1rem; border: 1px solid var(--border-color); padding: 0.2rem 0.5rem;">🚀</button>
+          <button type="button" class="ghost tiny" data-sample="career" title="Career"
+            style="font-size: 1rem; border: 1px solid var(--border-color); padding: 0.2rem 0.5rem;">💼</button>
+          <button type="button" class="ghost tiny" data-sample="education" title="Education"
+            style="font-size: 1rem; border: 1px solid var(--border-color); padding: 0.2rem 0.5rem;">🎓</button>
+          <button type="button" class="ghost tiny" data-sample="investment" title="Investment"
+            style="font-size: 1rem; border: 1px solid var(--border-color); padding: 0.2rem 0.5rem;">📈</button>
+          <button type="button" class="ghost tiny" data-sample="government" title="Government"
+            style="font-size: 1rem; border: 1px solid var(--border-color); padding: 0.2rem 0.5rem;">🏛️</button>
+          <button type="button" class="ghost tiny" data-sample="gambling" title="Gambling"
+            style="font-size: 1rem; border: 1px solid var(--border-color); padding: 0.2rem 0.5rem;">🎲</button>
+          <button type="button" class="ghost tiny" data-sample="marriage" title="Marriage"
+            style="font-size: 1rem; border: 1px solid var(--border-color); padding: 0.2rem 0.5rem;">💍</button>
+        </div>
+
+        <div id="modes-toolbar" class="mode-toggle"
+          style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+          <div id="modes-set-a" style="display: flex; gap: 0.5rem;">
+            <button class="mode-btn active" id="btn-mode-router" type="button">📡 ROUTER MODE</button>
+            <button class="mode-btn" id="btn-mode-automation" type="button">🤖 DIVERGENCE MODE</button>
+          </div>
+          <div id="modes-set-b" style="display: none; gap: 0.5rem;">
+            <button class="mode-btn" id="btn-mode-council" type="button">⌬ COUNCIL </button>
+            <button class="mode-btn" id="btn-mode-mesh" type="button">⬡ MESH </button>
+            <button class="mode-btn" id="btn-mode-tree" type="button">⟁ TREE </button>
+          </div>
+        </div>
+      </header>
+
+      <section class="card" style="padding: 0; border: none; box-shadow: none;">
+        <form id="scenario-form" class="form-grid">
+          <label>
+            <span>Councilal Hypothesis</span>
+            <textarea id="question" rows="3" placeholder="Define the branch point..."></textarea>
+          </label>
+          <label>
+            <span>Stochastic Facts</span>
+            <textarea id="facts" rows="4" placeholder="One fact per line..."></textarea>
+          </label>
+          <label id="custom-persona-label" style="display: block;">
+            <span>Custom Personas</span>
+            <div style="display: flex; gap: 0.5rem; align-items: stretch;">
+              <textarea id="custom-persona-input" rows="4" style="flex: 1; resize: vertical;"
+                placeholder="Describe a specific persona to inject into the simulation..."></textarea>
+              <div style="display: flex; flex-direction: column; gap: 0.2rem; justify-content: space-between;">
+                <button type="button" class="ghost tiny" id="btn-cp-add" style="flex: 1; padding: 0 0.5rem;"
+                  title="Add Persona">+</button>
+                <button type="button" class="ghost tiny" id="btn-cp-remove" style="flex: 1; padding: 0 0.5rem;"
+                  title="Remove Persona">-</button>
+                <div style="text-align: center; margin: 0.2rem 0;"><span id="cp-indicator"
+                    style="font-size: 0.7rem; font-family: var(--font-mono); color: var(--text-secondary); margin: 0;">1/1</span>
+                </div>
+                <button type="button" class="ghost tiny" id="btn-cp-prev"
+                  style="flex: 1; padding: 0 0.5rem;">&lt;</button>
+                <button type="button" class="ghost tiny" id="btn-cp-next"
+                  style="flex: 1; padding: 0 0.5rem;">&gt;</button>
+              </div>
+            </div>
+          </label>
+
+          <!-- Council-only params -->
+          <div class="council-params" id="council-params">
+            <div class="inline-grid cols-2">
+              <label>
+                <span>Branch Depth <small style="color:var(--text-secondary); font-size:0.8em; font-weight:normal;">(3-8)</small></span>
+                <input id="branch-count" type="number" min="3" max="8" value="5" />
+              </label>
+              <label>
+                <span>Agent Count <small style="color:var(--text-secondary); font-size:0.8em; font-weight:normal;">(3-12)</small></span>
+                <input id="persona-count" type="number" min="3" max="12" value="4" />
+              </label>
+            </div>
+          </div>
+
+          <!-- Mesh-only params -->
+          <div class="mesh-params" id="mesh-params">
+            <div class="inline-grid cols-2" style="margin-top:.5rem;">
+              <label>
+                <span>Mesh Size <small style="color:var(--text-secondary); font-size:0.8em; font-weight:normal;">(4-40)</small></span>
+                <input id="agent-count" type="number" min="4" max="40" value="15" />
+              </label>
+              <label>
+                <span>Tick Rounds <small style="color:var(--text-secondary); font-size:0.8em; font-weight:normal;">(1-15)</small></span>
+                <input id="tick-count" type="number" min="1" max="15" value="4" />
+              </label>
+            </div>
+          </div>
+
+          <!-- Divergence/Router params -->
+          <div class="divergence-params" id="divergence-params" style="display:none;">
+            <div class="inline-grid cols-2" style="margin-top:.5rem;">
+              <label>
+                <span>Depth Metric <small style="color:var(--text-secondary); font-size:0.8em; font-weight:normal;">(1-40)</small></span>
+                <input id="depth-metric" type="number" min="1" max="40" value="15" />
+              </label>
+              <label>
+                <span>Scale Metric <small style="color:var(--text-secondary); font-size:0.8em; font-weight:normal;">(1-40)</small></span>
+                <input id="scale-metric" type="number" min="1" max="40" value="10" />
+              </label>
+            </div>
+          </div>
+
+          <!-- ── Tree Mode params (prefix: tree-) ─────────── -->
+          <!-- IDs: tree-decision, tree-context, tree-domain,  -->
+          <!--       tree-depth, tree-branch                   -->
+          <div class="tree-params" id="tree-params">
+            <div class="inline-grid cols-2" style="margin-top:.5rem;">
+              <label>
+                <span>Tree Depth <small style="color:var(--text-secondary); font-size:0.8em; font-weight:normal;">(1-5)</small></span>
+                <input id="tree-depth" type="number" min="1" max="5" value="3" />
+              </label>
+              <label>
+                <span>Branching Factor <small style="color:var(--text-secondary); font-size:0.8em; font-weight:normal;">(2-5)</small></span>
+                <input id="tree-branch" type="number" min="2" max="5" value="3" />
+              </label>
+            </div>
+          </div>
+
+          <button type="button" id="tree-launch-btn" style="display:none; width: 100%;">⟁ LAUNCH TREE</button>
+          <div id="tree-status-line" style="display:none;">Awaiting decision seed.</div>
+
+          <button type="submit" id="btn-run" style="width: 100%;">LAUNCH COUNCIL</button>
+          <div id="queue-status"
+            style="margin-top: 0.5rem; color: var(--accent-orange); font-family: var(--font-mono); font-size: 0.85rem; text-align: center; font-weight: bold;">
+          </div>
+        </form>
+      </section>
+
+      <!-- System Monitor -->
+      <section>
+        <div class="status" style="margin-bottom: 0.5rem;">SYSTEM MONITOR</div>
+        <div id="status" class="console">
+          <div class="log-line">SYSTEM STANDBY.</div>
+        </div>
+      </section>
+
+      <section style="border-top: 1px solid #CCC; padding-top: 1rem;">
+        <div class="status" style="margin-bottom: 0.5rem;">SIMULATION TELEMETRY</div>
+        <div id="recent-runs" style="font-family: var(--font-mono); font-size: 0.75rem;"></div>
+      </section>
+
+      <div
+        style="margin-top: auto; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center;">
+        <p style="font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-mono);">UNIVERSAL MESH
+          INTELLIGENCE ENGINE // v5.0</p>
+      </div>
+    </aside>
+
+    <!-- Main View -->
+    <main class="workspace-main">
+      <div id="physics-arena" style="display: none;"></div>
+      <section id="results" class="results-canvas">
+        <div id="empty-state-container">
+          <!-- Dynamically injected by app.js based on mode -->
+        </div>
+      </section>
+
+      <!-- ── Tree Mode main panel ──────────────────────── -->
+      <!-- All sub-panels stack vertically (no tabs)         -->
+      <section id="tree-main-panel">
+        <!-- Dominant Futures is rendered here by app.js -->
+        <div id="tree-flow-content" style="padding:1.2rem;"></div>
+
+        <div id="tree-results-container" style="display:none;">
+          <!-- How Your Situation Could Change -->
+          <div class="tree-section-header">
+            <span>EXPECTED CHANGE FROM YOUR CURRENT SITUATION</span>
+            <span style="font-size:0.58rem;opacity:0.5;">Variable impact across all simulated paths</span>
+          </div>
+          <div id="tree-scatter-content" style="padding:1.2rem 1.2rem 0;"></div>
+
+          <!-- Causal Graph -->
+          <div class="tree-section-header" style="margin-top:1rem;">
+            <span>WHAT HAPPENS NEXT</span>
+            <span style="font-size:0.58rem;opacity:0.5;">Click any node to inspect its state</span>
+          </div>
+          <div id="tree-svg-container" style="overflow:auto; padding:1.2rem;"></div>
+        </div>
+      </section>
+
+      <!-- Mesh Feed Panel (below results when in mesh mode) -->
+      <section id="mesh-feed-panel">
+        <div class="status" style="margin-bottom:.8rem; color:var(--accent-orange);">MESH FEED — LIVE INTERACTIONS</div>
+        <div class="feed-scroller" id="feed-scroller">
+        </div>
+      </section>
+
+      <!-- Interview Transcript Panel (below MESH FEED) -->
+      <section id="interview-panel" class="council-only">
+        <div class="status" style="margin-bottom:.8rem; color:#9c88ff;">CROSS-EXAMINATION TRANSCRIPTS — COUNCIL
+          DELIBERATION</div>
+        <div id="interview-log">
+          <p style="color:var(--text-secondary);font-size:.78rem;font-style:italic;">No cross-examinations this run —
+            all personas committed to a firm stance on first evaluation.</p>
+        </div>
+      </section>
+
+      <!-- Profile Page -->
+      <section id="profile-page" style="display:none; padding: 2rem;">
+        <div class="status" style="color:var(--accent-orange);font-size:.8rem; margin-bottom:1rem;">USER PROFILE &
+          BILLING</div>
+        <div style="background:#fff; padding:1.5rem; border:1px solid var(--border-color); margin-bottom:2rem;">
+          <h2 style="margin-top:0; color:var(--text-primary); font-size:1.5rem;"><span id="profile-email-main"></span>
+          </h2>
+          <p style="font-size:1.1rem;"><strong>Available Tokens:</strong> <span id="profile-tokens-main"
+              style="color:var(--accent-orange); font-weight:bold;">0</span></p>
+        </div>
+
+        <div class="status" style="color:var(--text-secondary);font-size:.8rem; margin-bottom:1rem;">PURCHASE TOKENS
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:1.5rem; margin-bottom:2rem;">
+          <div class="card" style="text-align:center; padding:2rem 1rem;">
+            <h3>Basic</h3>
+            <p style="color:var(--text-secondary); font-size: 1.5rem; font-weight:bold; margin: 1.5rem 0;">150 Tokens</p>
+            <button class="ghost" id="btn-buy-basic" style="width:100%;">CLAIM</button>
+          </div>
+          <div class="card" style="text-align:center; padding:2rem 1rem; border-color:var(--accent-orange);">
+            <h3 style="color:var(--accent-orange);">Pro</h3>
+            <p style="color:var(--text-secondary); font-size: 1.5rem; font-weight:bold; margin: 1.5rem 0;">350 Tokens</p>
+            <button class="primary" id="btn-buy-pro" style="width:100%;">CLAIM</button>
+          </div>
+          <div class="card" style="text-align:center; padding:2rem 1rem;">
+            <h3>Enterprise</h3>
+            <p style="color:var(--text-secondary); font-size: 1.5rem; font-weight:bold; margin: 1.5rem 0;">500 Tokens</p>
+            <button class="ghost" id="btn-buy-enterprise" style="width:100%;">CLAIM</button>
+          </div>
+        </div>
+
+        <div class="status" style="color:var(--text-secondary);font-size:.8rem; margin-bottom:1rem;">USAGE HISTORY</div>
+        <div id="profile-history-list" style="display:flex; flex-direction:column; gap:1rem;">
+          <!-- Usage logs will be dynamically injected here -->
+        </div>
+      </section>
+    </main>
+
+  </div>
+
+  <!-- ── Tree Mode fixed overlays ─────────────────────────────────── -->
+  <!-- Node detail drawer (prefix: tree-node-drawer) -->
+  <div id="tree-node-drawer">
+    <button id="tree-node-drawer-close">✕</button>
+    <div id="tree-node-drawer-content"></div>
+  </div>
+  <!-- Scatter tooltip (prefix: tree-scatter-tooltip) -->
+  <div id="tree-scatter-tooltip"></div>
+
+  <!-- Agent Inspector Drawer -->
+  <div id="agent-inspector">
+    <button class="inspector-close" id="inspector-close">✕</button>
+    <div id="inspector-content"></div>
+  </div>
+
+  <!-- Extension Overlay -->
+  <div id="extension-overlay"
+    style="display:none; position:fixed; top:20px; right:20px; width:340px; height:600px; z-index:4000; border:var(--border-width) solid var(--border-color); box-shadow:8px 8px 0px #000; background:#FFF; overflow:hidden; flex-direction:column;">
+    <div
+      style="display:flex; justify-content:space-between; align-items:center; background:var(--accent-orange); border-bottom:var(--border-width) solid var(--border-color); padding:0.5rem 1rem;">
+      <span class="status" style="color:#000; font-weight:700; margin:0;">EXTENSION VIEW</span>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <label
+          style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.75rem; font-weight:bold; color:#000; font-family:monospace;">
+          <input type="checkbox" id="ext-theme-switch" style="cursor:pointer; margin:0;">
+          Dark
+        </label>
+        <button class="ghost tiny" id="btn-close-extension" style="padding:0.2rem 0.5rem; margin:0;">✕</button>
+      </div>
+    </div>
+    <iframe src="/extension/popup.html" style="border:none; width:100%; flex:1;"></iframe>
+  </div>
+
+  <!-- Global Error Modal -->
+  <div id="error-modal"
+    style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+    <div
+      style="background:#fff; width:450px; border-radius:8px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+      <div
+        style="background:var(--accent-orange); color:#fff; padding:1rem; font-weight:bold; font-size:1.1rem; display:flex; justify-content:space-between; align-items:center;">
+        <span id="error-modal-title">System Error</span>
+        <button id="error-modal-close"
+          style="background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer;">✕</button>
+      </div>
+      <div style="padding:1.5rem;">
+        <p id="error-modal-message" style="margin-bottom:1.5rem; line-height:1.4; color:var(--text-dark);"></p>
+        <div id="error-modal-actions" style="display:flex; justify-content:flex-end; gap:1rem;">
+          <button class="ghost" id="error-modal-btn-cancel">CLOSE</button>
+          <button class="primary" id="error-modal-btn-primary" style="display:none;">TAKE ACTION</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Modal -->
+  <div id="chat-modal">
+    <div class="chat-box">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div class="status" style="color:var(--accent-orange);font-size:.7rem;">AGENT CHAT</div>
+          <div id="chat-agent-name" style="font-weight:700;font-size:1rem;"></div>
+        </div>
+        <button class="ghost tiny" id="chat-close">CLOSE</button>
+      </div>
+      <div class="chat-history" id="chat-history"></div>
+      <div class="chat-input-row">
+        <input type="text" id="chat-input" placeholder="Ask this agent..." />
+        <button id="chat-send" class="ghost tiny">SEND</button>
+      </div>
+    </div>
+  </div>
+  <!-- Report Modal -->
+  <div id="report-modal"
+    style="display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.65); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
+    <div class="chat-box"
+      style="width: 800px; max-width: 90vw; max-height: 85vh; display: flex; flex-direction: column;">
+      <div style="display:flex;align-items:center;justify-content:space-between; margin-bottom: 1rem;">
+        <div class="status" style="color:var(--text-primary);font-size:.8rem;">SIMULATION REPORT</div>
+        <button class="ghost tiny" onclick="document.getElementById('report-modal').style.display='none'">CLOSE</button>
+      </div>
+      <div
+        style="overflow-y: auto; flex-grow: 1; background: var(--bg-main); padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px;">
+        <div id="report-modal-content"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Trash Modal -->
+  <div id="trash-modal"
+    style="display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.65); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
+    <div class="chat-box" style="width: 400px; max-width: 90vw;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="status" style="color:#e05c5c;font-size:.8rem;">DELETE SIMULATION</div>
+        <button class="ghost tiny" onclick="document.getElementById('trash-modal').style.display='none'">CLOSE</button>
+      </div>
+      <div>
+        <p style="margin-bottom:1.5rem; line-height:1.5;">Are you sure you want to permanently delete this simulation
+          history? This will delete the generated report, interaction logs, and un-learn any ingested branches from the
+          knowledge graph. This cannot be undone.</p>
+        <button id="btn-confirm-trash" class="primary"
+          style="width:100%; background:#e05c5c; border-color:#e05c5c; color:#fff;">YES, DELETE SIMULATION</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Modal -->
+  <div id="admin-modal"
+    style="display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.65); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
+    <div class="chat-box" style="width: 900px; max-width: 95vw; max-height: 90vh; overflow-y: auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="status" style="color:var(--accent-orange);font-size:.8rem;">ADMIN DASHBOARD</div>
+        <button class="ghost tiny" onclick="document.getElementById('admin-modal').style.display='none'">CLOSE</button>
+      </div>
+      <div
+        style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <div><strong>Users:</strong> <br /><span id="admin-total-users"
+            style="font-size:1.5rem; color:var(--accent-orange);">0</span></div>
+        <div><strong>Simulations:</strong> <br /><span id="admin-total-sims"
+            style="font-size:1.5rem; color:var(--accent-orange);">0</span></div>
+        <div><strong>Duration (s):</strong> <br /><span id="admin-total-duration"
+            style="font-size:1.5rem; color:var(--accent-orange);">0</span></div>
+        <div><strong>Tokens Used:</strong> <br /><span id="admin-total-tokens"
+            style="font-size:1.5rem; color:var(--accent-orange);">0</span></div>
+      </div>
+      <div style="display:flex; gap:1rem; margin-bottom:1.5rem;">
+        <button class="primary" id="btn-admin-reset-tokens" style="flex:1;">RESET ALL USER TOKENS</button>
+        <button class="primary" id="btn-admin-clear-db" style="flex:1; background:#e05c5c; border-color:#e05c5c; color:#fff;">CLEAR ALL DB ENTRIES (Excl. Users)</button>
+      </div>
+      
+      <div class="status" style="color:var(--accent-orange);font-size:.7rem;">PENDING TOKEN REQUESTS</div>
+      <div id="admin-token-requests-list" style="margin-bottom: 2rem; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;"></div>
+
+      <div class="status" style="color:var(--text-secondary);font-size:.7rem;">USERS LIST</div>
+      <div id="admin-users-list" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;"></div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+
+</html>

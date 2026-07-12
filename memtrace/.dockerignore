@@ -1,0 +1,78 @@
+# =============================================================================
+# MemTrace Production .dockerignore
+# =============================================================================
+# Only what's needed: source code, package.json, and Docker infrastructure.
+# Everything else is stripped to minimize image size and prevent secret leaks.
+
+# ── Dependencies (rebuilt in-container) ─────────────────────────────────────
+node_modules
+npm-debug.log*
+.yarn-integrity
+.yarn/
+.yarnrc.yml
+pnpm-lock.yaml
+
+# ── Version Control ──────────────────────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+.gitmodules
+
+# ── Environment & Secrets (NEVER ship to production) ─────────────────────────
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# ── Large Binaries (downloaded on boot or not needed) ───────────────────────
+models/*.gguf
+models/**/*.bin
+models/**/*.onnx
+models/**/*.pt
+
+# ── Runtime Data (generated at runtime, persists via volume mount) ──────────
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# ── CI/CD Infrastructure (not part of the runtime image) ─────────────────────
+docker/
+memtrace_cicd/
+
+# ── Tests (not needed in production) ─────────────────────────────────────────
+test/
+scratch/
+__tests__/
+__mocks__/
+*.test.js
+*.spec.js
+jest.config.*
+
+# ── Documentation (bloats image, no runtime value) ──────────────────────────
+md/
+*.md
+README.md
+LICENSE
+CHANGELOG.md
+ARCHITECTURE.md
+
+# ── Debug & Source Maps (exposes internals) ──────────────────────────────────
+*.js.map
+*.d.ts
+*.tsbuildinfo
+*.ts
+
+# ── Logs & Temp ─────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Native Module Artifacts ──────────────────────────────────────────────────
+*.node
+build/
+dist/

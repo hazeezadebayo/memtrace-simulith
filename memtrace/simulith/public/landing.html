@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MemTrace Council - The advanced AI simulation engine for high-stakes decisions.">
+    <title>Simulith | Council Engine</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        /* Specific Landing Page Styles */
+        html { scroll-behavior: smooth; }
+        body { padding-top: 80px; }
+        .header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background: rgba(250, 250, 250, 0.95);
+            border-bottom: var(--border-width) solid var(--border-color);
+            padding: 1.5rem 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 1000;
+        }
+        .header-nav { display: flex; gap: 2rem; }
+        .header-nav a { font-family: var(--font-mono); font-weight: 700; color: var(--text-dark); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+        .header-nav a:hover { color: var(--accent-orange); }
+
+        section { scroll-margin-top: 100px; }
+
+        .hero-section {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 70vh; text-align: center; padding: 4rem 2rem;
+        }
+        .hero-title {
+            font-size: clamp(3rem, 8vw, 6rem); line-height: 0.9; margin-bottom: 2rem;
+        }
+        .hero-tagline {
+            font-family: var(--font-mono); color: var(--accent-orange); font-size: 1.2rem;
+            margin-bottom: 3rem; max-width: 800px;
+        }
+        
+        .section-header { font-size: 2.5rem; border-bottom: var(--border-width) solid #000; margin-bottom: 2rem; padding-bottom: 0.5rem; text-transform: uppercase; }
+        
+        .spec-container { max-width: 1400px; margin: 0 auto; padding: 4rem 2rem 8rem 2rem; }
+        .spec-grid {
+            display: grid; grid-template-columns: 1fr; gap: 4rem;
+        }
+        .spec-box {
+            display: grid; grid-template-columns: 100px 1fr; gap: 2rem;
+            align-items: start;
+            border-top: var(--border-width) solid var(--border-color);
+            padding-top: 2rem;
+        }
+        .spec-num {
+            font-size: 3rem; font-family: var(--font-mono); font-weight: 700; color: var(--accent-orange);
+            line-height: 1; letter-spacing: -0.05em;
+        }
+        .spec-content h3 { font-size: 2rem; margin-bottom: 1rem; letter-spacing: -0.02em; }
+        .spec-content p { font-size: 1.15rem; color: var(--text-secondary); max-width: 800px; line-height: 1.6; }
+        
+        @media(min-width: 900px) {
+            .spec-grid { grid-template-columns: 1fr 1fr 1fr; gap: 4rem; }
+            .spec-box { grid-template-columns: 1fr; border-top: none; padding-top: 0; }
+            .spec-num { font-size: 4.5rem; margin-bottom: 1.5rem; border-bottom: var(--border-width) solid var(--border-color); padding-bottom: 1rem; display: block; color: var(--text-dark); }
+            .spec-box:hover .spec-num { color: var(--accent-orange); }
+        }
+
+        .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; padding: 4rem 2rem; max-width: 1400px; margin: 0 auto; }
+        .analytic-card { border: var(--border-width) solid var(--border-color); padding: 2rem; background: #FFF; box-shadow: 6px 6px 0px #000; transition: transform 0.1s ease; }
+        .analytic-card:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0px var(--accent-green); }
+        .analytic-val { font-size: 3.5rem; font-weight: 700; color: var(--accent-green); line-height: 1; margin-bottom: 0.5rem; }
+        .analytic-label { font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem; text-transform: uppercase; }
+
+        .how-it-works { padding: 4rem 2rem; background: #EEE; border-top: var(--border-width) solid var(--border-color); }
+        .flow-container { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; max-width: 1200px; margin: 0 auto; }
+        .flow-card { background: #FFF; border: var(--border-width) solid var(--border-color); padding: 2rem; box-shadow: 6px 6px 0px #000; }
+        .flow-step { border: 2px solid #000; padding: 1rem; margin-bottom: 1rem; position: relative; font-family: var(--font-mono); font-size: 0.9rem; background: #FAFAFA; font-weight: 700; }
+        .flow-step::after { content: '↓'; position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); font-size: 1.5rem; color: var(--accent-orange); }
+        .flow-step:last-child::after { content: none; }
+        
+        .pricing-section { padding: 4rem 2rem; max-width: 1200px; margin: 0 auto; }
+        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+        .price-card { background: #FFF; border: var(--border-width) solid var(--border-color); padding: 3rem 2rem; box-shadow: 8px 8px 0px #000; text-align: center; display: flex; flex-direction: column; }
+        .price-card:hover { transform: translate(-2px, -2px); box-shadow: 10px 10px 0px var(--accent-orange); }
+        .price-val { font-size: 4.5rem; font-weight: 700; margin: 1rem 0; color: var(--text-dark); line-height: 1; }
+        .price-tier { font-family: var(--font-mono); color: var(--accent-orange); font-size: 1.2rem; font-weight: 700; border-bottom: 2px solid #EEE; padding-bottom: 1rem; }
+        
+        .testimonials { padding: 6rem 2rem; background: #FAFAFA; border-top: var(--border-width) solid var(--border-color); }
+        .matrix-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 4rem; align-items: end; }
+        .use-cases { display: flex; flex-direction: column; gap: 1.5rem; }
+        .use-case-card { background: #FFF; border: 2px solid var(--border-color); padding: 1.5rem; transition: transform 0.2s; box-shadow: 4px 4px 0px rgba(0,0,0,0.05); }
+        .use-case-card:hover { transform: translateX(5px); border-color: var(--accent-orange); box-shadow: 4px 4px 0px rgba(255,107,26,0.15); }
+        .use-case-card h4 { color: var(--text-dark); font-family: var(--font-mono); font-size: 1.1rem; margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0; }
+        .use-case-card p { font-size: 1rem; color: var(--text-secondary); margin: 0; }
+        
+        .global-meter-wrapper { background: #FFF; border: var(--border-width) solid var(--border-color); padding: 2rem; box-shadow: 8px 8px 0px rgba(0,0,0,0.05); }
+        .global-meter-wrapper h4 { text-align: center; font-family: var(--font-mono); font-size: 0.9rem; margin-bottom: 2rem; color: var(--text-dark); border-bottom: 1px solid #EEE; padding-bottom: 0.5rem; }
+        
+        .emotion-meter { display: flex; justify-content: space-between; align-items: flex-end; height: 100px; gap: 1rem; }
+        .emotion-bar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; }
+        .bar-fill { width: 100%; background: #F0F0F0; border: 1px solid #DDD; border-bottom: none; transition: height 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.3s ease, border-color 0.3s ease; }
+        .global-meter-wrapper:hover .bar-fill { border-color: var(--border-color); background: #EAEAEA; }
+        
+        .bar-fill.med { background: #E0E0E0; }
+        .bar-fill.high { background: #D0D0D0; }
+        .global-meter-wrapper:hover .bar-fill.high { background: var(--text-dark); border-color: var(--text-dark); }
+        .global-meter-wrapper:hover .bar-fill.max { background: var(--accent-orange); border-color: var(--accent-orange); }
+        
+        .emotion-emoji { font-size: 1.5rem; margin-top: 0.5rem; filter: grayscale(100%) opacity(0.3); transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); transform: scale(0.9); }
+        .global-meter-wrapper:hover .emotion-emoji { filter: grayscale(0%) opacity(1); transform: scale(1.1); }
+        
+        .emotion-count { font-family: var(--font-mono); font-size: 0.9rem; color: var(--text-dark); font-weight: 700; margin-bottom: 0.8rem; position: absolute; top: -30px; opacity: 0; transform: translateY(10px); transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .global-meter-wrapper:hover .emotion-count { opacity: 1; transform: translateY(0); }
+        
+        .network-graph { position: relative; height: 140px; margin: 1rem 0 1rem 0; border: 1px dashed var(--border-color); background: #FAFAFA; }
+        .network-edges { width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none; }
+        .network-edges line { stroke: #DDD; transition: stroke 0.3s ease; }
+        .network-graph:hover .network-edges line { stroke: #CCC; }
+        .node { position: absolute; width: 8px; height: 8px; background: var(--text-dark); border-radius: 50%; transform: translate(-50%, -50%); cursor: crosshair; transition: all 0.2s ease; z-index: 2; }
+        .node:hover { background: var(--accent-orange); transform: translate(-50%, -50%) scale(2); z-index: 100; box-shadow: 0 0 10px var(--accent-orange); }
+        .node::after { content: attr(data-name); position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: var(--text-dark); color: #FFF; font-family: var(--font-mono); font-size: 0.75rem; padding: 4px 10px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; border: 1px solid var(--accent-orange); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .node:hover::after { opacity: 1; }
+
+        .footer { padding: 4rem 2rem; border-top: var(--border-width) solid var(--border-color); display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 4rem; background: #FFF; }
+        .footer-brand { font-size: 2rem; font-weight: 700; letter-spacing: -0.05em; }
+        .footer-col h5 { font-family: var(--font-mono); color: var(--accent-orange); margin-bottom: 1.5rem; font-size: 1.1rem; border-bottom: 2px solid #000; padding-bottom: 0.5rem; }
+        .footer-col ul { list-style: none; }
+        .footer-col li { margin-bottom: 0.8rem; font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; }
+        .footer-col a { color: var(--text-secondary); text-decoration: none; transition: color 0.1s; }
+        .footer-col a:hover { color: var(--accent-orange); }
+
+        @media(max-width: 900px) {
+            .flow-container, .footer, .matrix-layout { grid-template-columns: 1fr; }
+            .header-nav { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div style="font-family: var(--font-mono); font-weight: 700; font-size: 1.8rem; letter-spacing: -0.05em;"><a href="/simulith/landing.html" style="color: inherit; text-decoration: none;">SIMULITH</a></div>
+        <nav class="header-nav">
+            <a href="#specs">SPECS</a>
+            <a href="#architecture">ARCHITECTURE</a>
+            <a href="#satisfaction">MATRIX</a>
+        </nav>
+        <a href="/simulith/login.html" style="text-decoration: none;"><button class="ghost">LOGIN_SYSTEM</button></a>
+    </header>
+
+    <section class="hero-section">
+        <h1 class="hero-title">PREDICT<br/>THE FUTURE</h1>
+        <p class="hero-tagline">A/B TEST EVERY INTERACTION BEFORE IT HAPPENS. STOP REACTING. START PROJECTING.</p>
+        <div>
+            <a href="/simulith/login.html" style="text-decoration: none;"><button>ENTER_WORKSPACE</button></a>
+        </div>
+    </section>
+
+    <!-- Technical Specs Grid -->
+    <section class="spec-container" id="specs">
+        <div class="spec-grid">
+            <div class="spec-box">
+                <div class="spec-num">01</div>
+                <div class="spec-content">
+                    <h3>QWEN AI ORCHESTRATION</h3>
+                    <p>Powered by Qwen's latest foundational models, our Swarm Engine synthesizes complex personas to stress-test your communication strategies with unparalleled cognitive depth.</p>
+                </div>
+            </div>
+            <div class="spec-box">
+                <div class="spec-num">02</div>
+                <div class="spec-content">
+                    <h3>TURSO EDGE DATABASES</h3>
+                    <p>Simulations are anchored via high-performance, globally distributed edge databases. Your knowledge graphs and interaction memories are serialized instantly with zero latency.</p>
+                </div>
+            </div>
+            <div class="spec-box">
+                <div class="spec-num">03</div>
+                <div class="spec-content">
+                    <h3>ENTERPRISE TOKEN QUEUE</h3>
+                    <p>Built for scale. Request mock computation tokens through an advanced admin-controlled approval pipeline, ensuring cost-managed simulation workloads across large teams.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Analytics -->
+    <section class="analytics-grid">
+        <div class="analytic-card">
+            <div class="analytic-val">1,420</div>
+            <div class="analytic-label">Today's Visits</div>
+        </div>
+        <div class="analytic-card">
+            <div class="analytic-val">84.5K</div>
+            <div class="analytic-label">Rounds Simulated</div>
+        </div>
+        <div class="analytic-card">
+            <div class="analytic-val">9.2M</div>
+            <div class="analytic-label">Total Duration (hrs)</div>
+        </div>
+        <div class="analytic-card" style="border-color: var(--accent-orange);">
+            <div class="analytic-val" style="color: var(--accent-orange);">10+</div>
+            <div class="analytic-label">Languages Supported</div>
+        </div>
+        <div class="analytic-card" style="background: var(--text-dark); color: #FFF;">
+            <div class="analytic-val" style="color: var(--accent-cyan);">ZERO</div>
+            <div class="analytic-label" style="color: #FFF;">Risk Iteration</div>
+        </div>
+    </section>
+
+    <!-- How it Works -->
+    <section class="how-it-works" id="architecture">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <h2 class="section-header">HOW IT WORKS</h2>
+            <div class="flow-container">
+                <div class="flow-card">
+                    <h3 style="font-size: 1.5rem;">QWEN SCENARIO MAPPING</h3>
+                    <p style="margin-bottom: 2rem; font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-secondary);">Parse context into an interactive environment.</p>
+                    <div class="flow-step">1. INGESTION: Supply facts, memos, or emails</div>
+                    <div class="flow-step">2. PERSONA SYNTHESIS: Qwen AI generates realistic actors</div>
+                    <div class="flow-step">3. CONCURRENT REASONING: Parallel multi-agent deliberation</div>
+                    <div class="flow-step" style="border-color: var(--accent-green); background: #F0FFF0;">4. PERSISTENCE: Data serialized instantly to Turso Edge</div>
+                    <div style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid #CCC; font-family: var(--font-mono); font-size: 0.85rem; line-height: 1.6;">
+                        <span style="color: var(--accent-orange); font-weight: 700;">TLDR:</span> Drop your real-world context into the engine, and our AI dynamically spins up stakeholders, competitors, or audiences to test your ideas against.
+                    </div>
+                </div>
+                
+                <div class="flow-card">
+                    <h3 style="font-size: 1.5rem;">A/B INTERACTION TESTING</h3>
+                    <p style="margin-bottom: 2rem; font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-secondary);">Simulate before you commit.</p>
+                    <div class="flow-step">1. HYPOTHESIS: Inject a controversial policy or statement</div>
+                    <div class="flow-step">2. MOCK EXECUTION: Agents react, comment, and debate</div>
+                    <div class="flow-step">3. SENTIMENT TRACKING: Measure narrative drift & backlash</div>
+                    <div class="flow-step" style="border-color: var(--accent-orange); background: #FFF5F0;">4. REPORTING: Aggregate the most likely outcomes</div>
+                    <div style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px solid #CCC; font-family: var(--font-mono); font-size: 0.85rem; line-height: 1.6;">
+                        <span style="color: var(--accent-orange); font-weight: 700;">TLDR:</span> You don't have to guess how people will react. Watch the simulation play out multiple times, track the emotional fallout, and adjust your strategy before going live.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Testimonials (Smiley Meter) -->
+    <section class="testimonials" id="satisfaction">
+        <div style="max-width: 1400px; margin: 0 auto;">
+            <h2 class="section-header" style="border-color: var(--border-color);">STRATEGIC USE CASES</h2>
+            <div class="matrix-layout">
+                
+                <div class="use-cases">
+                    <div class="use-case-card">
+                        <h4>BEFORE SENDING AN EMAIL</h4>
+                        <p>Simulate likely reactions from your team, executives, or clients to catch misinterpretations early.</p>
+                    </div>
+                    <div class="use-case-card">
+                        <h4>BEFORE A SALES CALL</h4>
+                        <p>Spin up an adversarial buyer persona to simulate objections and refine your pitch mechanics.</p>
+                    </div>
+                    <div class="use-case-card">
+                        <h4>BEFORE HIRING</h4>
+                        <p>Simulate team dynamics to see how a new personality profile might shift your existing culture.</p>
+                    </div>
+                    <div class="use-case-card">
+                        <h4>BEFORE POSTING</h4>
+                        <p>A/B test audience interpretations of your launch announcement to prevent brand crises.</p>
+                    </div>
+                </div>
+
+                <div class="global-meter-wrapper">
+                    <h4>AGGREGATE PLATFORM SENTIMENT</h4>
+                    
+                    <!-- Network Graph Pseudo-Simulation -->
+                    <div class="network-graph">
+                        <svg class="network-edges">
+                            <line x1="10%" y1="20%" x2="25%" y2="60%" stroke-width="1.5"/>
+                            <line x1="10%" y1="20%" x2="15%" y2="80%" stroke-width="1.5"/>
+                            <line x1="25%" y1="60%" x2="35%" y2="30%" stroke-width="1.5"/>
+                            <line x1="35%" y1="30%" x2="45%" y2="70%" stroke-width="1.5"/>
+                            <line x1="45%" y1="70%" x2="55%" y2="20%" stroke-width="1.5"/>
+                            <line x1="55%" y1="20%" x2="65%" y2="50%" stroke-width="1.5"/>
+                            <line x1="65%" y1="50%" x2="50%" y2="90%" stroke-width="1.5"/>
+                            <line x1="65%" y1="50%" x2="75%" y2="80%" stroke-width="1.5"/>
+                            <line x1="75%" y1="80%" x2="85%" y2="30%" stroke-width="1.5"/>
+                            <line x1="85%" y1="30%" x2="90%" y2="60%" stroke-width="1.5"/>
+                            <line x1="15%" y1="80%" x2="5%" y2="45%" stroke-width="1.5"/>
+                            <line x1="5%" y1="45%" x2="20%" y2="40%" stroke-width="1.5"/>
+                            <line x1="20%" y1="40%" x2="30%" y2="15%" stroke-width="1.5"/>
+                            <line x1="30%" y1="15%" x2="40%" y2="55%" stroke-width="1.5"/>
+                            <line x1="40%" y1="55%" x2="60%" y2="35%" stroke-width="1.5"/>
+                            <line x1="60%" y1="35%" x2="70%" y2="15%" stroke-width="1.5"/>
+                            <line x1="70%" y1="15%" x2="80%" y2="55%" stroke-width="1.5"/>
+                            <line x1="80%" y1="55%" x2="95%" y2="85%" stroke-width="1.5"/>
+                            <line x1="95%" y1="85%" x2="85%" y2="90%" stroke-width="1.5"/>
+                            <line x1="85%" y1="90%" x2="50%" y2="90%" stroke-width="1.5"/>
+                        </svg>
+                        <div class="node" style="top: 20%; left: 10%;" data-name="Agent: Alpha_01"></div>
+                        <div class="node" style="top: 60%; left: 25%;" data-name="Agent: Skeptic_99"></div>
+                        <div class="node" style="top: 80%; left: 15%;" data-name="Agent: Bull_Zero"></div>
+                        <div class="node" style="top: 30%; left: 35%;" data-name="Agent: Validator_X"></div>
+                        <div class="node" style="top: 70%; left: 45%;" data-name="Agent: Ghost_Node"></div>
+                        <div class="node" style="top: 20%; left: 55%;" data-name="Agent: Strategist_Prime"></div>
+                        <div class="node" style="top: 50%; left: 65%;" data-name="Agent: Oracle_7"></div>
+                        <div class="node" style="top: 90%; left: 50%;" data-name="Agent: Outlier_Detect"></div>
+                        <div class="node" style="top: 80%; left: 75%;" data-name="Agent: Sentiment_Hub"></div>
+                        <div class="node" style="top: 30%; left: 85%;" data-name="Agent: Trend_Follower"></div>
+                        <div class="node" style="top: 60%; left: 90%;" data-name="Agent: Chaos_Monkey"></div>
+                        <div class="node" style="top: 45%; left: 5%;" data-name="Agent: Baseline_Observer"></div>
+                        <div class="node" style="top: 40%; left: 20%;" data-name="Agent: Logic_Gate"></div>
+                        <div class="node" style="top: 15%; left: 30%;" data-name="Agent: Core_Heuristic"></div>
+                        <div class="node" style="top: 55%; left: 40%;" data-name="Agent: Synthesizer"></div>
+                        <div class="node" style="top: 35%; left: 60%;" data-name="Agent: Echo_Chamber"></div>
+                        <div class="node" style="top: 15%; left: 70%;" data-name="Agent: Failsafe_Trigger"></div>
+                        <div class="node" style="top: 55%; left: 80%;" data-name="Agent: Aggregator"></div>
+                        <div class="node" style="top: 85%; left: 95%;" data-name="Agent: Fringe_Node"></div>
+                        <div class="node" style="top: 90%; left: 85%;" data-name="Agent: Arbiter_Final"></div>
+                    </div>
+
+                    <p style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary); text-align: center; margin-bottom: 0.5rem; line-height: 1.5; padding: 0 1rem;">
+                        <strong>TLDR:</strong> The Mesh Engine connects multiple specialized personas in a <span style="color: var(--accent-orange);">semantic network</span>.
+                    </p>
+
+                    <div class="emotion-meter">
+                        <div class="emotion-bar"><div class="emotion-count">19</div><div class="bar-fill" style="height: 5%;"></div><div class="emotion-emoji">😞</div></div>
+                        <div class="emotion-bar"><div class="emotion-count">84</div><div class="bar-fill" style="height: 15%;"></div><div class="emotion-emoji">😐</div></div>
+                        <div class="emotion-bar"><div class="emotion-count">450</div><div class="bar-fill med" style="height: 40%;"></div><div class="emotion-emoji">🙂</div></div>
+                        <div class="emotion-bar"><div class="emotion-count">3.2k</div><div class="bar-fill high" style="height: 80%;"></div><div class="emotion-emoji">😄</div></div>
+                        <div class="emotion-bar"><div class="emotion-count">6.8k</div><div class="bar-fill max" style="height: 100%;"></div><div class="emotion-emoji">🤩</div></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div style="max-width: 400px;">
+            <div class="footer-brand"><a href="/simulith/landing.html" style="color: inherit; text-decoration: none;">SIMULITH</a></div>
+            <p style="font-family: var(--font-mono); font-size: 0.9rem; margin-top: 1rem; color: var(--text-secondary); line-height: 1.6;">
+                Advanced Agentic Intelligence Framework. High-stakes simulations grounded in absolute reality.
+            </p>
+            <div style="margin-top: 2rem; font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-green); font-weight: 700;">
+                ● HYPERSTITION PROTOCOL ONLINE
+            </div>
+        </div>
+        <div class="footer-col">
+            <h5>SUPPORT & LEGAL</h5>
+            <ul>
+                <li><a href="#">Privacy Policy</a></li>
+                <li><a href="#">Terms of Service</a></li>
+                <li><a href="#">FAQ</a></li>
+                <li><a href="#">Contact Us</a></li>
+            </ul>
+        </div>
+    </footer>
+</body>
+</html>

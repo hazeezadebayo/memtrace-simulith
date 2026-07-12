@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /council/landing.html
+Allow: /council/login.html
+Allow: /styles.css
+Disallow: /api/
+Disallow: /council/workspace.html
+Disallow: /council/app.js
+
+Sitemap: https://memtrace.local/sitemap.xml

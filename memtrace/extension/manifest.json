@@ -1,0 +1,55 @@
+{
+  "manifest_version": 3,
+  "name": "Memtrace AI",
+  "version": "1.3",
+  "description": "Summarize and search chat threads with per-result copy, per-chunk image downloads, UUID-based thread management, and memory management.",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "storage",
+    "scripting",
+    "clipboardWrite",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "*://*/*",
+    "https://cdn.jsdelivr.net/*",
+    "https://huggingface.co/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.openai.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*/*",
+        "http://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "content.js",
+        "utils/memtrace.json",
+        "utils/transformers.min.js",
+        "utils/Xenova/all-MiniLM-L6-v2/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+# GitHub-specific ignores (applies only to .github/ directory)
+# Root .gitignore still applies project-wide.

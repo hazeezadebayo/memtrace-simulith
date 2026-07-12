@@ -1,0 +1,17 @@
+services:
+  api:
+    image: memtrace:latest
+    container_name: memtrace_api
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports: [ "3000:3106" ]
+    env_file:
+      - ../../.env
+    volumes: 
+      - ../data:/app/data
+      - ../simulith:/app/simulith
+      - ../api:/app/api
+      - ../extension:/app/extension
+      - ../models:/app/models
+      - ../test:/app/test

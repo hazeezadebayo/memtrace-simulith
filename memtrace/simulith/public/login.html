@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Login to MemTrace Decision Simulator to access your context-aware memory vault.">
+    <title>Login | Simulith </title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        body {
+            background: var(--bg-main);
+            padding-top: 100px; /* Clear fixed header */
+            box-sizing: border-box;
+            min-height: 100vh;
+            padding-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background: rgba(250, 250, 250, 0.95);
+            border-bottom: 2px solid var(--border-color);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            margin: auto;
+        }
+        .login-card h1 {
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+        }
+        .login-card p {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--accent-orange);
+            margin-bottom: 3rem;
+        }
+        .btn-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div style="font-family: var(--font-mono); font-weight: 700; font-size: 1.8rem; letter-spacing: -0.05em;"><a href="/simulith/landing.html" style="color: inherit; text-decoration: none;">SIMULITH</a></div>
+    </header>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        async function handleCredentialResponse(response) {
+            const statusDiv = document.querySelector('.status');
+            statusDiv.innerHTML = 'VALIDATING_CREDENTIALS...';
+            
+            try {
+                const res = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: response.credential })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    if (data.token) {
+                        localStorage.setItem('simulith_token', data.token);
+                    }
+                    window.location.href = '/simulith/workspace.html';
+                } else {
+                    alert('Login failed: ' + data.error);
+                    statusDiv.innerHTML = 'SECURE_ACCESS_REQUIRED';
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+                alert('An error occurred during login.');
+                statusDiv.innerHTML = 'SECURE_ACCESS_REQUIRED';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+        });
+    </script>
+    
+    <div class="login-card card">
+        <div class="status" style="margin-bottom: 1rem;">SECURE_ACCESS_REQUIRED</div>
+        <h1>IDENTITY_CHECK</h1>
+        <p>INITIALIZING AUTHENTICATION SEQUENCE FOR MESH INSTANCE // v4.2</p>
+
+        <div class="btn-stack" style="align-items: center;">
+            <div id="g_id_onload"
+                 data-client_id="624961239870-bu25msh0hsbki5c14cca9ucudacu17ge.apps.googleusercontent.com"
+                 data-context="signin"
+                 data-ux_mode="popup"
+                 data-callback="handleCredentialResponse"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="rectangular"
+                 data-theme="outline"
+                 data-text="signin_with"
+                 data-size="large"
+                 data-logo_alignment="left">
+            </div>
+        </div>
+
+        <div style="margin-top: 3rem; font-family: var(--font-mono); font-size: 0.7rem; color: #888; border-top: 1px solid #EEE; padding-top: 1rem;">
+            ENCRYPTION_STATE: STABLE // SESSION_PERSISTENCE: ENABLED
+        </div>
+    </div>
+</body>
+</html>
