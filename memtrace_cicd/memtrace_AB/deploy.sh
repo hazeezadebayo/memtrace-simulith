@@ -231,6 +231,9 @@ RUN npm install --production && \
 # Copy application code
 COPY . .
 
+# Ensure config.js exists (copy from example if absent)
+RUN test -f extension/env/config.js || cp extension/env/config.example.js extension/env/config.js
+
 ENV PORT=3106
 EXPOSE 3106
 

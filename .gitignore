@@ -75,5 +75,5 @@ build/
 *.sqlite
 *.gguf
 
-# Extension Config
-memtrace/extension/env/config.js
+# Extension Config (committed — reads all values from process.env)
+# memtrace/extension/env/config.js

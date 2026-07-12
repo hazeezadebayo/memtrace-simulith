@@ -12,6 +12,9 @@ RUN npm install --production && \
 
 COPY . .
 
+# Ensure config.js exists (copy from example if absent — handles gitignored checkout edge cases)
+RUN test -f extension/env/config.js || cp extension/env/config.example.js extension/env/config.js
+
 ENV PORT=3106
 EXPOSE 3106
 
