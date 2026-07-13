@@ -61,7 +61,7 @@ The consequence tree mode has been migrated to a stochastic dynamical system:
 - **Path-Integrated Utility Score Calculation:** Fixed mathematical error in `extractDominantPaths` where terminal state utilities and transition path probabilities were double-counted/mis-scaled. It now implements a clean, path-integrated expectation calculation that aligns with MCTS search metrics.
 - **Comprehensive Parser Unit Testing:** Created `test/query_adapter.test.js` covering multiple parser formats and expected utility calculations.
 - **Test Alignment:** Jest assertions and the Consolidated Orchestration Suite validated cleanly with zero errors.
-- **Alibaba Cloud Hackathon Infrastructure:** Implemented Qwen Hackathon compliant CI/CD deployment scripting (`deploy.sh`) and instructions (`README.md`) within `memtrace_cicd/memtrace_AB` for automated Docker Compose provisioning on ECS/SAS instances.
+- **Alibaba Cloud Hackathon Infrastructure:** GitHub Actions workflow (`.github/workflows/deploy.yml`) builds and deploys to Alibaba SAS on push to `main`.
 
 ### What is Currently in Progress
 - **Monitoring Production Logs:** Verifying the reliability of the offline model under continuous concurrent request loads.
