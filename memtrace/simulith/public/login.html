@@ -87,20 +87,19 @@
                 if (retries > 0) setTimeout(() => initGoogleAuth(retries - 1), 300);
                 return;
             }
+            google.accounts.id.initialize({
+                client_id: '624961239870-bu25msh0hsbki5c14cca9ucudacu17ge.apps.googleusercontent.com',
+                callback: (response) => {
+                    if (response.error) {
+                        alert('Login failed: ' + response.error);
+                        return;
+                    }
+                    sendIdTokenToBackend(response.credential);
+                },
+                cancel_on_tap_outside: false,
+            });
             document.getElementById('customGoogleBtn').addEventListener('click', () => {
-                const client = google.accounts.oauth2.initTokenClient({
-                    client_id: '624961239870-bu25msh0hsbki5c14cca9ucudacu17ge.apps.googleusercontent.com',
-                    callback: (response) => {
-                        if (response.error) {
-                            alert('Login failed: ' + response.error);
-                            return;
-                        }
-                        sendIdTokenToBackend(response.id_token);
-                    },
-                    scope: 'openid email profile',
-                    prompt: 'select_account',
-                });
-                client.requestAccessToken();
+                google.accounts.id.prompt();
             });
         }
         document.addEventListener('DOMContentLoaded', initGoogleAuth);
