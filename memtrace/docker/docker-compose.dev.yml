@@ -1,10 +1,10 @@
 services:
-  api:
+  memtrace:
     image: memtrace:latest
-    container_name: memtrace_api
+    container_name: memtrace
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.dev
     ports: [ "3000:3106" ]
     env_file:
       - ../../.env

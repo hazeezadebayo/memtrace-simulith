@@ -1,67 +1,47 @@
-# MemTrace Docker Setup & Usage Guide
+# MemTrace Docker
 
-This directory contains the necessary configuration to run **MemTrace (Decision Simulator & Threadlet Orchestrator)** in a containerized environment, ensuring reproducibility and host isolation.
+This directory contains container definitions for local development and production deployment.
 
-## 1. Installation (Debian/Linux)
+## Files
 
-We provide a helper script to install Docker Engine and Docker Compose.
+| File | Purpose |
+|---|---|
+| `Dockerfile.dev` | Dev image — includes build tools (python3, make, g++, cmake) for native modules |
+| `Dockerfile.prod` | Slim production image — no build tools, runs as `node` user |
+| `docker-compose.dev.yml` | Dev stack — mounts source code as volumes for live editing |
+| `docker-compose.prod.yml` | Production stack — used by GitHub Actions deploy, includes cloudflared tunnel |
+| `install_docker.sh` | One-time Docker Engine + Compose installer for Debian |
 
-### Step 1: Run the Installer
-Navigate to the project root and run:
+## Usage
+
+### Local development
+
+From the project root:
+
 ```bash
-chmod +x memtrace/docker/install_docker.sh
-sudo ./memtrace/docker/install_docker.sh
+# Via lifecycle script (recommended)
+./run_memtrace.sh build   # Build the dev image
+./run_memtrace.sh up      # Start (builds if needed, then runs)
+./run_memtrace.sh clean   # Stop and remove containers
+
+# Via docker compose directly
+docker compose -f memtrace/docker/docker-compose.dev.yml up -d
 ```
 
-### Step 2: Fix Permissions
-By default, Docker requires `sudo`. To run it as your current user:
-1. `sudo usermod -aG docker $USER`
-2. Log out and log back in, or run `newgrp docker`.
+The app is available at `http://localhost:3000`.
 
----
+### Production deployment
 
-## 2. Running the Project
+Push to `main` — GitHub Actions (`.github/workflows/deploy.yml`) handles the rest:
+1. Builds the image using `Dockerfile.prod`
+2. Pushes to GHCR (`ghcr.io/hazeezadebayo/memtrace-simulith`)
+3. SSHes into Alibaba SAS, generates `.env` + `docker-compose.prod.yml`, pulls, and restarts
 
-The containerized environment builds the entire MemTrace stack, including the **Decision Engine** and the **Threadlet API**.
+## Cloudflare Tunnel
 
-### Start everything
-From the project root, use the lifecycle script (Recommended):
-```bash
-./run_memtrace.sh up
-```
+`docker-compose.prod.yml` includes a `cloudflared` sidecar that provides a public HTTPS URL for Google Sign-In. After deploy:
 
-Or run manually via docker compose:
-```bash
-docker compose -f memtrace/docker/docker-compose.yml up -d
-```
-
-### Services Available
-- **Integrated API**: `http://localhost:3000`
-- **Decision Simulator UI**: `http://localhost:3000/council/`
-- **Simulation API**: `http://localhost:3000/api/v4/`
-
----
-
-## 3. Persistence
-
-The `docker-compose.yml` configures two critical volumes for persistence:
-1. `/app/data/memtrace.sqlite`: Stores your threadlet memory graph.
-2. `/app/simulith/data`: Stores your decision simulation state, settings, and historical runs.
-
----
-
-## 4. Testing in Docker
-
-To verify the system within the container:
-```bash
-# Run the full test suite
-docker compose -f memtrace/docker/docker-compose.yml up test-suite
-```
-
----
-
-## 5. Deployment Notes
-
-- **Identity**: The project has counciled to a Decision Simulator. The Docker setup reflects this by prioritizing port 3000 for the unified dashboard.
-- **Portability**: The `node:20-slim` base image ensures a small, performant runtime environment.
-- **Security**: The `API_KEYS` environment variable should be set in production to protect the ingestion and simulation endpoints.
+1. Check the tunnel connected: `docker logs memtrace_cloudflared`
+2. In Cloudflare Zero Trust → Networks → Tunnels, configure a public hostname
+3. Service URL: `http://memtrace:3106`
+4. Add the HTTPS URL to Google Cloud Console → Authorized JavaScript origins

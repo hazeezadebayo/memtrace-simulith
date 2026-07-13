@@ -1,7 +1,7 @@
 services:
-  api:
+  memtrace:
     image: ghcr.io/hazeezadebayo/memtrace-simulith:latest
-    container_name: memtrace_api
+    container_name: memtrace
     ports:
       - "${HOST_PORT:-3000}:3106"
     env_file:
@@ -32,7 +32,7 @@ services:
       - .env
     command: tunnel --no-autoupdate run --token $CLOUDFLARE_TUNNEL_TOKEN
     depends_on:
-      - api
+      - memtrace
 
 volumes:
   memtrace_data:

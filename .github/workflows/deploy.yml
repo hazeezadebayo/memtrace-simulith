@@ -67,7 +67,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # ── Build & push Docker image ────────────────────────────────────
-      # Uses Dockerfile.prod — no build-essential packages (slimmer image)
+      # Uses Dockerfile.prod — slim image with no build-essential packages
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -115,12 +115,12 @@ jobs:
 
             echo ".env written"
 
-            # ── Write docker-compose.yml ─────────────────────────────
-            cat > "$DEPLOY_DIR/docker-compose.yml" << 'ENDCOMPOSE'
+            # ── Write docker-compose.prod.yml ─────────────────────────
+            cat > "$DEPLOY_DIR/docker-compose.prod.yml" << 'ENDCOMPOSE'
             services:
-              api:
+              memtrace:
                 image: ghcr.io/hazeezadebayo/memtrace-simulith:latest
-                container_name: memtrace_api
+                container_name: memtrace
                 ports:
                   - "3000:3106"
                 env_file:
@@ -151,20 +151,20 @@ jobs:
                   - .env
                 command: tunnel --no-autoupdate run --token $CLOUDFLARE_TUNNEL_TOKEN
                 depends_on:
-                  - api
+                  - memtrace
 
             volumes:
               memtrace_data:
                 driver: local
             ENDCOMPOSE
 
-            echo "docker-compose.yml written"
+            echo "docker-compose.prod.yml written"
 
             # ── Deploy ───────────────────────────────────────────────
             cd "$DEPLOY_DIR"
-            docker compose pull
-            docker compose down --remove-orphans 2>/dev/null || true
-            docker compose up -d
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
+            docker compose -f docker-compose.prod.yml up -d
 
             # ── Health check ─────────────────────────────────────────
             echo "Waiting for health check..."
@@ -178,5 +178,5 @@ jobs:
             done
 
             echo "❌ Health check failed after 60s"
-            docker compose logs --tail=30 api
+            docker compose -f docker-compose.prod.yml logs --tail=30 memtrace
             exit 1

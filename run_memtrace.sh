@@ -60,11 +60,11 @@ function usage() {
 case "$1" in
     build)
         echo "🏗️ Building MemTrace images..."
-        cd "$DOCKER_DIR" && docker compose build
+        cd "$DOCKER_DIR" && docker compose -f docker-compose.dev.yml build
         ;;
     up)
         echo "🚀 Starting MemTrace..."
-        cd "$DOCKER_DIR" && docker compose up -d
+        cd "$DOCKER_DIR" && docker compose -f docker-compose.dev.yml up -d
         echo "⏳ Waiting for API..."
         # Wait for health check (max 5 minutes for model downloads)
         MAX_RETRIES=300
@@ -86,12 +86,12 @@ case "$1" in
         ;;
     clean)
         echo "🧹 Cleaning up..."
-        cd "$DOCKER_DIR" && docker compose down --remove-orphans
+        cd "$DOCKER_DIR" && docker compose -f docker-compose.dev.yml down --remove-orphans
         ;;
     kill)
         echo "🛑 Killing MemTrace..."
         if [ -d "$DOCKER_DIR" ]; then
-            (cd "$DOCKER_DIR" && docker compose down) 2>/dev/null || true
+            (cd "$DOCKER_DIR" && docker compose -f docker-compose.dev.yml down) 2>/dev/null || true
         fi
         
         echo "🛑 Killing local Node.js server instances..."

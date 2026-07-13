@@ -258,7 +258,7 @@ You can run the full test suite in a deterministic environment using Docker.
 
 **Build the Image**
 ```bash
-docker build -f docker/Dockerfile -t memtrace-api .
+docker build -f docker/Dockerfile.dev -t memtrace-api .
 ```
 
 **Run API Tests** (Server & Endpoints)
