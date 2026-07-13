@@ -117,6 +117,8 @@ await orchestrator.init('server-instance', dbType === 'postgres' ? 'postgres' : 
 // === ENDPOINTS ===
 app.get('/health', (req, res) => res.json({ status: 'ok', db: dbType }));
 
+app.get('/', (req, res) => res.redirect('/simulith/'));
+
 import coreMemoryRouter, { injectCoreDependencies } from './core_memory_server.js';
 injectCoreDependencies(orchestrator, OrchestratorLLMAdapter);
 app.use('/', coreMemoryRouter);
