@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Login to MemTrace Decision Simulator to access your context-aware memory vault.">
-    <title>Login | Simulith </title>
+    <title>Simulith | Login</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
     <link rel="stylesheet" href="styles.css" />
     <style>
@@ -87,30 +87,25 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            google.accounts.id.initialize({
+                client_id: '624961239870-bu25msh0hsbki5c14cca9ucudacu17ge.apps.googleusercontent.com',
+                callback: handleCredentialResponse,
+                auto_select: false,
+                cancel_on_tap_outside: false,
+            });
+            document.getElementById('customGoogleBtn').addEventListener('click', () => {
+                google.accounts.id.prompt();
+            });
         });
     </script>
     
     <div class="login-card card">
         <div class="status" style="margin-bottom: 1rem;">SECURE_ACCESS_REQUIRED</div>
         <h1>IDENTITY_CHECK</h1>
-        <p>INITIALIZING AUTHENTICATION SEQUENCE FOR MESH INSTANCE // v4.2</p>
+        <p>INITIALIZING AUTHENTICATION SEQUENCE</p>
 
         <div class="btn-stack" style="align-items: center;">
-            <div id="g_id_onload"
-                 data-client_id="624961239870-bu25msh0hsbki5c14cca9ucudacu17ge.apps.googleusercontent.com"
-                 data-context="signin"
-                 data-ux_mode="popup"
-                 data-callback="handleCredentialResponse"
-                 data-auto_prompt="false">
-            </div>
-            <div class="g_id_signin"
-                 data-type="standard"
-                 data-shape="rectangular"
-                 data-theme="outline"
-                 data-text="signin_with"
-                 data-size="large"
-                 data-logo_alignment="left">
-            </div>
+            <button id="customGoogleBtn">▸ SIGN IN WITH GOOGLE</button>
         </div>
 
         <div style="margin-top: 3rem; font-family: var(--font-mono); font-size: 0.7rem; color: #888; border-top: 1px solid #EEE; padding-top: 1rem;">
