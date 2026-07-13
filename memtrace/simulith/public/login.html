@@ -58,22 +58,18 @@
     </header>
     <script src="https://accounts.google.com/gsi/client" defer></script>
     <script>
-        async function handleCredentialResponse(response) {
+        async function sendIdTokenToBackend(idToken) {
             const statusDiv = document.querySelector('.status');
             statusDiv.innerHTML = 'VALIDATING_CREDENTIALS...';
-            
             try {
                 const res = await fetch('/api/auth/google', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: response.credential })
+                    body: JSON.stringify({ token: idToken })
                 });
-                
                 const data = await res.json();
                 if (data.success) {
-                    if (data.token) {
-                        localStorage.setItem('simulith_token', data.token);
-                    }
+                    if (data.token) localStorage.setItem('simulith_token', data.token);
                     window.location.href = '/simulith/workspace.html';
                 } else {
                     alert('Login failed: ' + data.error);
@@ -91,14 +87,20 @@
                 if (retries > 0) setTimeout(() => initGoogleAuth(retries - 1), 300);
                 return;
             }
-            google.accounts.id.initialize({
-                client_id: '624961239870-bu25msh0hsbki5c14cca9ucudacu17ge.apps.googleusercontent.com',
-                callback: handleCredentialResponse,
-                auto_select: false,
-                cancel_on_tap_outside: false,
-            });
             document.getElementById('customGoogleBtn').addEventListener('click', () => {
-                google.accounts.id.prompt();
+                const client = google.accounts.oauth2.initTokenClient({
+                    client_id: '624961239870-bu25msh0hsbki5c14cca9ucudacu17ge.apps.googleusercontent.com',
+                    callback: (response) => {
+                        if (response.error) {
+                            alert('Login failed: ' + response.error);
+                            return;
+                        }
+                        sendIdTokenToBackend(response.id_token);
+                    },
+                    scope: 'openid email profile',
+                    prompt: 'select_account',
+                });
+                client.requestAccessToken();
             });
         }
         document.addEventListener('DOMContentLoaded', initGoogleAuth);

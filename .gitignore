@@ -76,5 +76,8 @@ build/
 *.sqlite
 *.gguf
 
+# Internal workflow docs — never uploaded to GitHub
+git_workflow.md
+
 # Extension Config (committed — reads all values from process.env)
 # memtrace/extension/env/config.js
