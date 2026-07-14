@@ -36,6 +36,7 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(rateLimiter);
+app.disable('x-powered-by');
 
 // === AUTHENTICATION ===
 app.use('/api/auth', authRouter);
@@ -64,8 +65,54 @@ app.get('/api/config', (req, res) => {
     });
 });
 
-// Serve extension directory so workspace can iframe it
-app.use('/extension', express.static(path.join(__dirname, '..', 'extension')));
+// === LLM PROXY ENDPOINTS (keeps API keys server-side) ===
+import { summarizeChunk, generateTags, getEmbedding } from '../extension/core/llm_agent.js';
+
+app.post('/api/llm/summarize', async (req, res) => {
+    const { text, maxWords } = req.body;
+    const summary = await summarizeChunk(text, maxWords || 75, DEFAULT_CONFIG.llm_provider, DEFAULT_CONFIG.apiKey);
+    res.json({ summary });
+});
+
+app.post('/api/llm/tags', async (req, res) => {
+    const { text } = req.body;
+    const tags = await generateTags(text, DEFAULT_CONFIG.llm_provider, DEFAULT_CONFIG.apiKey);
+    res.json({ tags });
+});
+
+app.post('/api/llm/embed', async (req, res) => {
+    const { text } = req.body;
+    const embedding = await getEmbedding(text, DEFAULT_CONFIG.emb_provider, DEFAULT_CONFIG.apiKey);
+    res.json({ embedding });
+});
+
+app.get('/api/llm/config', (req, res) => {
+    res.json({
+        llm_provider: DEFAULT_CONFIG.llm_provider,
+        emb_provider: DEFAULT_CONFIG.emb_provider,
+        configured: !!DEFAULT_CONFIG.apiKey
+    });
+});
+
+app.post('/api/llm/generate-answer', async (req, res) => {
+    const { formatted, query } = req.body;
+    const { buildContextForQuery } = await import('../extension/core/llm_agent.js');
+    const answer = await buildContextForQuery(formatted, query, DEFAULT_CONFIG);
+    res.json({ answer });
+});
+
+// Filtered config.js for app.js (only LIMITS, no secrets)
+app.get('/extension/env/config.js', (req, res) => {
+    res.type('js').send(`export const DEFAULT_CONFIG = { LIMITS: ${JSON.stringify(DEFAULT_CONFIG.LIMITS)} };`);
+});
+
+// Serve only whitelisted extension files
+const extensionDir = path.join(__dirname, '..', 'extension');
+const ALLOWED_EXTENSION = new Set(['/popup.html', '/popup.bundle.js']);
+app.use('/extension', (req, res, next) => {
+    if (ALLOWED_EXTENSION.has(req.path)) return next();
+    res.status(403).type('text').send('Forbidden');
+}, express.static(extensionDir));
 
 const JWT_SECRET = loadOrCreateJwtSecret();
 app.use('/simulith', (req, res, next) => {

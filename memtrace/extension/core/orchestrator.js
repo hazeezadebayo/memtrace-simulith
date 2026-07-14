@@ -1,8 +1,8 @@
 import { chunkAndRefine } from '../core/chunker.js';
 import { cosineSimilarity } from '../llm/embedding.js';
 import { estimateTokensHeuristic } from '../core/utils.js';
-import { buildContextForQuery } from '../core/llm_agent.js';
-import { loadThread, deleteReference, deleteChunk, getChunk, upsertChunk, getAll, initializeStorage, search } from '../core/memory.js';
+import { setupXenovaEnv } from '../core/helper.js';
+import { loadThread, deleteReference, deleteChunk, getChunk, upsertChunk, getAll, initializeStorage, search, getNextIndex, updateThreadIncremental } from '../core/memory.js';
 
 
 /* -----------------------------------------------------------------
@@ -30,8 +30,6 @@ export class ThreadletOrchestrator {
         // We need to import it properly. It wasn't in utils.
         // Dynamic import to avoid circular dep issues or if it's large?
         // popup.js imported it from './core/helper.js'.
-        // Let's use dynamic import here to be safe and clean, or fix the import at top.
-        const { setupXenovaEnv } = await import('../core/helper.js');
         await setupXenovaEnv();
 
         // 2. Initialize Storage
@@ -54,9 +52,6 @@ export class ThreadletOrchestrator {
         console.log('[Orchestrator] Starting search:', query, uuid);
         const thread = await loadThread(uuid);
         if (!thread || !thread.references?.length) return [];
-
-        const cfg = await this.llm.getConfig();
-        const { llm_provider, emb_provider, apiKey } = cfg;
 
         // 1. Embed Query
         const queryEmb = await this.llm.embed(query);
@@ -178,15 +173,13 @@ export class ThreadletOrchestrator {
     }
 
     async generateAnswer(query, hits) {
-        const cfg = await this.llm.getConfig();
-        // Convert hits to format expected by buildContextForQuery
         const formatted = hits.map((h, i) => ({
             index: i,
             reference: h.chunk.reference || h.refName || "unknown",
             summary: h.chunk.summary,
             score: h.score
         }));
-        return await buildContextForQuery(formatted, query, cfg);
+        return await this.llm.generateAnswer(formatted, query);
     }
 
     async pasteChunk(targetUuid, targetUrl, clipboard) {
@@ -275,7 +268,6 @@ export class ThreadletOrchestrator {
         const { onProgress = () => { }, chunkSize = 3000, overlap = 0.15 } = options;
 
         // 1. Reserve Integrity: Get next index
-        const { getNextIndex } = await import('../core/memory.js');
         const startIndex = await getNextIndex(uuid, url);
         console.log(`[Ingest] Reserved Index Start: ${startIndex}`);
 
@@ -374,7 +366,6 @@ export class ThreadletOrchestrator {
 
         // 6. Incremental Save (Smart Dedupe / Reference Management)
         onProgress(90, 'Saving to Memory…');
-        const { updateThreadIncremental } = await import('../core/memory.js');
 
         // We pass validChunks to ensure 'Reference' object is created/updated.
         // updateThreadIncremental logic manages the "Append" logic.

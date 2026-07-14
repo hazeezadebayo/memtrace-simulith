@@ -12,6 +12,9 @@ RUN npm install --production && \
 
 COPY . .
 
+# Bundle popup into single file (only popup.html + popup.bundle.js served publicly)
+RUN npm run build:popup
+
 # Ensure config.js exists (copy from example if absent — handles gitignored checkout edge cases)
 RUN test -f extension/env/config.js || cp extension/env/config.example.js extension/env/config.js
 

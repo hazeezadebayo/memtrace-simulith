@@ -11,5 +11,8 @@ RUN apt-get update && \
 # Copy Code
 COPY . .
 
+# Bundle popup into single file (only popup.html + popup.bundle.js served publicly)
+RUN npm run build:popup
+
 ENV PORT=3106
 CMD ["node", "api/memtrace_server.js"]

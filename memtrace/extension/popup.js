@@ -29,13 +29,54 @@
    •        (Were being deleted by .textContent assignment)
    ================================================================== */
 
-import {
-    getDeviceUUID,
-    copyToClipboard,
-    imagifyChunk
-} from './core/helper.js';
+import { ThreadletOrchestrator } from './core/orchestrator.js';
 
-import { summarizeChunk, generateTags } from './core/llm_agent.js'; // NEW SPECIALIZED IMPORTS
+async function getDeviceUUID() {
+    try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) { const data = await res.json(); if (data.uuid) {
+            if (window.chrome?.storage?.local) await chrome.storage.local.set({ deviceUUID: data.uuid });
+            else localStorage.setItem('deviceUUID', data.uuid);
+            return data.uuid;
+        }}
+    } catch(e) { console.warn('Could not fetch UUID from backend, falling back to local storage.'); }
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+        const { deviceUUID } = await chrome.storage.local.get('deviceUUID');
+        if (deviceUUID) return deviceUUID;
+        const newId = crypto.randomUUID();
+        await chrome.storage.local.set({ deviceUUID: newId });
+        return newId;
+    }
+    let deviceUUID = localStorage.getItem('deviceUUID');
+    if (!deviceUUID) { deviceUUID = crypto.randomUUID(); localStorage.setItem('deviceUUID', deviceUUID); }
+    return deviceUUID;
+}
+async function copyToClipboard(txt) { await navigator.clipboard.writeText(txt); }
+async function imagifyChunk(chunk, w = 640, h = 800) {
+    const words = chunk.replace(/\t/g, ' ').replace(/\r\n/g, '\n').split(/\s+/).filter(Boolean);
+    if (!words.length) return [];
+    const lineH = 18, font = '14px Arial', maxW = w - 20, maxLines = Math.floor((h - 20) / lineH);
+    const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    const slices = []; let i = 0;
+    while (i < words.length) {
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+        ctx.font = font; ctx.fillStyle = '#000'; ctx.textBaseline = 'top';
+        let y = 10, lines = 0, line = '', used = 0;
+        for (; i < words.length; i++) {
+            const test = line ? line + ' ' + words[i] : words[i];
+            if (ctx.measureText(test).width > maxW && line) {
+                ctx.fillText(line, 10, y); y += lineH; lines++; line = words[i];
+                if (lines >= maxLines) break;
+            } else { line = test; used++; }
+        }
+        if (line && lines < maxLines) ctx.fillText(line, 10, y);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.15);
+        slices.push({ dataUrl, wordsUsed: used });
+        i += used;
+    }
+    return slices;
+}
 
 /* -----------------------------------------------------------------
    1. DOM CACHE — NOW IN init() TO AVOID NULL
@@ -564,38 +605,31 @@ let _clipboard = null; // { uuid, ref, index }
 async function getOrchestrator() {
     if (_orchestrator) return _orchestrator;
 
-    const { ThreadletOrchestrator } = await import('./core/orchestrator.js');
-    const { callLLM, getEmbedding, getLLMConfig } = await import('./core/llm_agent.js'); // Import ALL needed
-
-    // DYNAMIC ADAPTER: Fetches config AT CALL TIME
     const adapter = {
-        call: async (prompt, max) => {
-            const cfg = getLLMConfig();
-            return callLLM(cfg.llm_provider, cfg.apiKey, prompt, max);
-        },
         embed: async (text) => {
-            const cfg = getLLMConfig();
-            return getEmbedding(text, cfg.emb_provider, cfg.apiKey);
+            const res = await fetch('/api/llm/embed', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text }) });
+            return (await res.json()).embedding;
         },
-        // NEW: Validation & Config Access
         validate: async () => {
-            const cfg = getLLMConfig();
-            if (!cfg?.llm_provider || !cfg?.emb_provider || !cfg?.apiKey) {
-                return { error: 'Missing configuration (API Key or Provider)' };
-            }
-            return true;
+            try {
+                const res = await fetch('/api/llm/config');
+                const cfg = await res.json();
+                if (!cfg?.llm_provider || !cfg?.emb_provider || !cfg?.configured) return { error: 'Missing configuration (API Key or Provider)' };
+                return true;
+            } catch(e) { return { error: 'Cannot reach server' }; }
         },
-        getConfig: async () => {
-            return getLLMConfig();
-        },
-        // NEW SPECIALIZED AGENTS
+        getConfig: async () => (await fetch('/api/llm/config')).json(),
         summarize: async (text, maxWords) => {
-            const cfg = getLLMConfig();
-            return summarizeChunk(text, maxWords, cfg.llm_provider, cfg.apiKey);
+            const res = await fetch('/api/llm/summarize', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text, maxWords }) });
+            return (await res.json()).summary;
         },
         tag: async (text) => {
-            const cfg = getLLMConfig();
-            return generateTags(text, cfg.llm_provider, cfg.apiKey);
+            const res = await fetch('/api/llm/tags', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text }) });
+            return (await res.json()).tags;
+        },
+        generateAnswer: async (formatted, query) => {
+            const res = await fetch('/api/llm/generate-answer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ formatted, query }) });
+            return (await res.json()).answer;
         }
     };
 
