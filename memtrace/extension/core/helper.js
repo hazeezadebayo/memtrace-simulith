@@ -38,6 +38,10 @@ export async function setupXenovaEnv() {
 
         if (!IS_NODE) {
             // === BROWSER (Extension) CONFIG ===
+            if (typeof chrome === 'undefined' || !chrome.runtime?.getURL) {
+                console.log('[Xenova] Running in browser context without chrome API — skipping extension-specific env setup.');
+                return;
+            }
             // Point to extension's local utils folder
             env.localModelPath = chrome.runtime.getURL('utils/');
             env.allowLocalModels = true;
