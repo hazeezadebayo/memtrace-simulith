@@ -209,7 +209,9 @@ export async function proposeGenerativePersonas(scenario, evidence, existingPers
     emit('generative', `Injected ${toInject.length} user-created custom personas into the pool.`);
   }
 
-  for (let i = personas.length; i < count; i++) {
+  let retries = count * 2;
+  while (personas.length < count && retries > 0) {
+    retries--;
     const allExisting = [...(existingPersonas || []), ...personas];
     const existingDesc = allExisting.map(p => `- ${p.name || 'Unknown'} (${p.expertise || p.note || 'General'}, reasoning style: ${p.reasoningStyle || p.cluster || 'Neutral'})`).join('\n');
     const avoidStr = allExisting.length > 0
@@ -221,7 +223,7 @@ export async function proposeGenerativePersonas(scenario, evidence, existingPers
       Facts: ${scenario.facts.join(', ')}
       
       We are generating ${count} highly distinct "Personas" that represent key stakeholders or opposing viewpoints for this SPECIFIC problem.
-      Generate persona #${i + 1} of ${count}.
+      Generate persona #${personas.length + 1} of ${count}.
       ${avoidStr}
       
       Requirements for this persona:
@@ -248,11 +250,11 @@ export async function proposeGenerativePersonas(scenario, evidence, existingPers
 
     const result = await callLLM(prompt, 0.85);
     if (!result) {
-      emit('llm_error', `Persona #${i + 1} generation LLM returned empty response.`);
+      emit('llm_error', `Persona generation failed (LLM returned empty response). Retrying...`);
       continue;
     }
 
-    emit('llm_raw_persona', `Persona #${i + 1} LLM Output:\n${result.substring(0, 150)}...`);
+    emit('llm_raw_persona', `Persona #${personas.length + 1} LLM Output:\n${result.substring(0, 150)}...`);
     const parsed = parseJson(result);
     if (parsed) {
       if (Array.isArray(parsed)) {
@@ -260,9 +262,8 @@ export async function proposeGenerativePersonas(scenario, evidence, existingPers
       } else {
         personas.push(parsed);
       }
-    }
-    if (personas.length >= count) {
-      break;
+    } else {
+      emit('llm_error', `Persona JSON parse failed. Retrying...`);
     }
   }
 
