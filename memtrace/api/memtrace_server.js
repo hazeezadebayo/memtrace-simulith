@@ -215,10 +215,6 @@ const dbConfig = {
     online_db_provider: DEFAULT_CONFIG.online_db_provider,
     auth_token: DEFAULT_CONFIG.turso_auth_token
 };
-// We need a dummy UUID for 'device' context if running as server? 
-// Or does init take a deviceUUID that scopes the DB? 
-// Memory.js initializeStorage(uuid, mode, config). 
-// If we use 'server' mode, maybe UUID is ignored or used as server ID.
 await orchestrator.init('server-instance', dbType === 'postgres' ? 'postgres' : dbType, dbConfig);
 // === ENDPOINTS ===
 app.get('/health', (req, res) => res.json({ status: 'ok', db: dbType }));
@@ -253,4 +249,5 @@ async function startServer() {
     process.on('SIGTERM', () => server.close());
 }
 
-startServer();
+if (!process.env.TEST_MODE) startServer();
+export default app;

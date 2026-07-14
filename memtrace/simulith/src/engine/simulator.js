@@ -579,6 +579,7 @@ export async function simulateMesh(input = {}, emit = () => {}) {
 
     const finalEdges = relationalEdges.length > 0 ? relationalEdges : dbEdges;
 
+  console.log(`[SIMULATE_SCENARIO_DEBUG] Returning council result with id=${simId}`);
     return {
       id:           simId,
       type:         'mesh',

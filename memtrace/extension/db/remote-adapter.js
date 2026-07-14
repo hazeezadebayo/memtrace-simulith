@@ -4,7 +4,7 @@ import { MemoryStore } from './abstraction.js';
 export class RemoteAdapter extends MemoryStore {
     constructor(cfg) {
         super();
-        this.baseUrl = cfg?.apiBaseUrl || 'http://localhost:3000';
+        this.baseUrl = cfg?.apiBaseUrl || '';
     }
 
     async init() {
@@ -21,6 +21,7 @@ export class RemoteAdapter extends MemoryStore {
         const res = await fetch(`${this.baseUrl}${endpoint}`, {
             method,
             headers,
+            credentials: 'include',
             body: body ? JSON.stringify(body) : undefined
         });
         if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
@@ -47,6 +48,7 @@ export class RemoteAdapter extends MemoryStore {
         const validRefs = hierarchical.references || [];
         return validRefs.flatMap(ref => ref.chunks.map(c => ({
             ...c,
+            text: c.chunk,
             url: ref.reference,
         })));
     }

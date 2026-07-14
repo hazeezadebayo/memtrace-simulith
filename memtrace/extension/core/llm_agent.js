@@ -93,8 +93,10 @@ async function callMock(prompt) {
     await new Promise(resolve => setTimeout(resolve, 15));
 
     // 0. Injection Guardrail check mock handler
-    if (prompt.includes('malicious instructions') || prompt.includes('system prompt override')) {
-      if (prompt.includes('Ignore instructions') || prompt.includes('secret system override')) {
+    const guardrailMatch = prompt.match(/^Analyze the text decoded from this base64\.[\s\S]*?Decoded text:\s*(.+)$/);
+    if (guardrailMatch) {
+      const decoded = Buffer.from(guardrailMatch[1].trim(), 'base64').toString('utf-8');
+      if (/ignore instructions|secret system override/i.test(decoded)) {
         return "YES";
       }
       return "NO";
@@ -384,7 +386,7 @@ async function callMock(prompt) {
     // Original mock fallbacks
     if (prompt.includes('Summarize')) return "This is a mock summary of the content.";
     if (prompt.includes('tags')) return "mock, test, end-to-end, validation, success";
-    return "Mock response";
+    return "{}";
 }
 
 /* -----------------------------------------------------------------

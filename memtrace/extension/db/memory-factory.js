@@ -23,8 +23,8 @@ export class MemoryFactory {
                 return db;
             }
             if (provider === 'turso') {
-                const { SQLiteAdapter } = await import('./sqlite-adapter.js');
-                const db = new SQLiteAdapter(config);
+                const { RemoteAdapter } = await import('./remote-adapter.js');
+                const db = new RemoteAdapter(config);
                 await db.init();
                 return db;
             }

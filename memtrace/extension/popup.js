@@ -649,7 +649,14 @@ async function renderFiles() {
     const uuid = deviceUUID;
     const orch = await getOrchestrator();
 
-    const thread = await orch.getThread(uuid);
+    let thread;
+    try {
+        thread = await orch.getThread(uuid);
+    } catch (e) {
+        console.error('[FILES] getThread failed:', e);
+        document.getElementById('files-list').innerHTML = `<p>Error loading data: ${e.message}</p>`;
+        return;
+    }
 
     if (!thread?.references?.length) {
         document.getElementById('files-list').innerHTML = '<p>No references</p>';

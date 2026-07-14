@@ -86,6 +86,9 @@ export async function getEmbedding(text, provider = "xenova", apiKey, model = nu
         }
 
         // ---------- XENOVA ----------
+        if (provider === "xenova" && process.env.SKIP_XENOVA === 'true') {
+            throw new Error('Skipping xenova (SKIP_XENOVA is set)');
+        }
         if (provider === "xenova") {
             // Load embedder once
             if (!xenovaExtractor) {
