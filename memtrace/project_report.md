@@ -9,6 +9,7 @@ MemTrace is a Universal Mesh Intelligence and Scenario Decision Simulator. It in
 3. **Storage (SQLite/Turso)**: Persists chunks using unique compound keys (`uuid:timestamp:index`), retrieving candidates via vector cosine similarity or FTS5 phrase matching.
 
 ## Completed Work
+*   **Hugging Face Deployment Stability**: Identified and resolved a 502/530 gateway timeout error in the cloud CI/CD pipeline. The server was falling back to `localllm` as its default provider, triggering a massive, synchronous 1.8GB model download on boot inside the Hugging Face Gradio Space, which exceeded the health-check timeout and caused the container to crash. Fixed by explicitly defining `LLM_PROVIDER=qwen` in the CI/CD `.env` to enforce lightweight cloud LLM execution.
 *   **UI Defensiveness**: Implemented null-safe access in `llm_agent.js` (`getLLMConfig`) to eliminate `TypeError` crashes when DOM elements are missing.
 *   **Resimulation API Integrity**: Fixed the payload formatting in `app.js` to correctly send `newEvidence`, preventing `HTTP 400` errors on `/resimulate`.
 *   **Module Cleanup**: Resolved duplicate export `SyntaxError` in `memory.js`.

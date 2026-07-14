@@ -18,8 +18,8 @@ RUN test -f extension/env/config.js || cp extension/env/config.example.js extens
 # Bundle popup into single file (only popup.html + popup.bundle.js served publicly)
 RUN npm run build:popup
 
-# Ensure /app/data exists and is writable by node user (for libsql DBs through volume mount)
-RUN mkdir -p /app/data && chown -R node:node /app/data
+# Ensure /app/data and /app/models exist and are writable by node user
+RUN mkdir -p /app/data /app/models && chown -R node:node /app/data /app/models
 
 ENV PORT=3106
 EXPOSE 3106

@@ -1905,11 +1905,20 @@ async function runRouterScenario() {
     body: JSON.stringify(payload),
     signal: currentAbortController ? currentAbortController.signal : undefined
   });
-  const data = await res.json();
+  
   if (!res.ok) {
-    if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${data.error}`);
-    throw new Error(data.error || 'Router execution failed');
+    let errorMessage = 'Router execution failed';
+    try {
+      const errorData = await res.json();
+      errorMessage = errorData.error || errorMessage;
+      if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${errorMessage}`);
+    } catch(e) {
+      errorMessage = `Gateway Error: ${res.status} ${res.statusText}`;
+    }
+    throw new Error(errorMessage);
   }
+  
+  const data = await res.json();
 
   logConsole(`OPTIMAL REALITY ROUTED SUCCESSFULLY: ${data.router_selection.mode.toUpperCase()}`, 'success');
   logConsole(`REASONING: ${data.router_selection.reasoning}`, 'system');
@@ -2142,13 +2151,17 @@ function switchDivergenceTab(tabName, rawResults) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ newEvidence })
           });
-          const resJob = await response.json();
-          if (!response.ok) throw new Error(resJob.error || 'Resimulation failed');
-          logConsole(`RESIMULATION QUEUED: ${resJob.jobId}`, 'system');
-          const finalResult = await pollJob(resJob.jobId, '/api/v4/jobs');
+          const resData = await response.json();
+          if (!response.ok) throw new Error(resData.error || 'Resimulation failed');
           logConsole('RESIMULATION COMPLETE.', 'success');
+          
           // Update cached results and switch tab to update view
-          rawResults.council = finalResult;
+          const updated = resData.updatedBranch;
+          const branchIndex = councilResult.branches.findIndex(b => b.id === branchId);
+          if (branchIndex >= 0) {
+              councilResult.branches[branchIndex] = updated;
+          }
+          rawResults.council = councilResult;
           switchDivergenceTab('council', rawResults);
         } catch (err) {
           logConsole(`RESIMULATION ERROR: ${err.message}`, 'error');
@@ -2277,11 +2290,20 @@ async function runDivergenceScenario() {
     body: JSON.stringify(payload),
     signal: currentAbortController ? currentAbortController.signal : undefined
   });
-  const data = await res.json();
+  
   if (!res.ok) {
-    if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${data.error}`);
-    throw new Error(data.error || 'Divergence execution failed');
+    let errorMessage = 'Divergence execution failed';
+    try {
+      const errorData = await res.json();
+      errorMessage = errorData.error || errorMessage;
+      if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${errorMessage}`);
+    } catch(e) {
+      errorMessage = `Gateway Error: ${res.status} ${res.statusText}`;
+    }
+    throw new Error(errorMessage);
   }
+  
+  const data = await res.json();
 
   logConsole('DIVERGENCE SYNTHESIS SEQUENCE COMPLETED.', 'success');
 
@@ -2455,7 +2477,7 @@ function startTelemetryTimer() {
     }
 
     updateTelemetryUI(currentTelemetry);
-  }, 100);
+  }, 2000);
 }
 
 function stopTelemetryTimer() {
