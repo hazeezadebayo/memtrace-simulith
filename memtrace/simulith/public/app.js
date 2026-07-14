@@ -2057,7 +2057,13 @@ async function runRouterScenario() {
           logConsole(`RESIMULATION QUEUED: ${resJob.jobId}`, 'system');
           const finalResult = await pollJob(resJob.jobId, '/api/v4/jobs');
           logConsole('RESIMULATION COMPLETE.', 'success');
-          await rerender(finalResult);
+          
+          const updated = finalResult.updatedBranch || finalResult;
+          const bIndex = simResult.branches.findIndex(b => b.id === branchId);
+          if (bIndex >= 0) {
+              simResult.branches[bIndex] = updated;
+          }
+          await rerender(simResult);
         } catch (err) {
           logConsole(`RESIMULATION ERROR: ${err.message}`, 'error');
           btn.innerText = 'RE-SIMULATE';
@@ -2159,7 +2165,12 @@ function switchDivergenceTab(tabName, rawResults) {
           logConsole('RESIMULATION COMPLETE.', 'success');
           
           // Update cached results and switch tab to update view
-          rawResults.council = finalResult;
+          const updated = finalResult.updatedBranch || finalResult;
+          const bIndex = councilResult.branches.findIndex(b => b.id === branchId);
+          if (bIndex >= 0) {
+              councilResult.branches[bIndex] = updated;
+          }
+          rawResults.council = councilResult;
           switchDivergenceTab('council', rawResults);
         } catch (err) {
           logConsole(`RESIMULATION ERROR: ${err.message}`, 'error');

@@ -95,7 +95,7 @@ export const queue = new JobQueue({
         run.branches[branchIndex] = scoredBranch;
         await saveState(payload.uuid, state);
         
-        return run;
+        return { updatedBranch: scoredBranch };
       }
 
       let facts = payload.facts || [];
