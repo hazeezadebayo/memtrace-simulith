@@ -12,7 +12,7 @@ export class SQLiteAdapter extends MemoryStore {
         let SQL;
         if (typeof window !== 'undefined') {
             const initSqlJs = (await import('./sql/sql-wasm.js')).default;
-            SQL = await initSqlJs({ locateFile: () => new URL('sql/sql-wasm.wasm', import.meta.url).href });
+            SQL = await initSqlJs({ locateFile: () => '/extension/db/sql/sql-wasm.wasm' });
         } else {
             const { createClient } = await import('@libsql/client');
             const dbUrl = this.cfg?.connectionString || process.env.TURSO_DATABASE_URL || `file:${this.path}`;

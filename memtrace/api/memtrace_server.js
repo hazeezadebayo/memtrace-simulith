@@ -106,11 +106,13 @@ app.get('/extension/env/config.js', (req, res) => {
     res.type('js').send(`export const DEFAULT_CONFIG = { LIMITS: ${JSON.stringify(DEFAULT_CONFIG.LIMITS)} };`);
 });
 
-// Serve only whitelisted extension files
+// Serve only whitelisted extension files (safe: .wasm is compiled binary, not source)
 const extensionDir = path.join(__dirname, '..', 'extension');
 const ALLOWED_EXTENSION = new Set(['/popup.html', '/popup.bundle.js']);
+const WASM_SUFFIX = '.wasm';
 app.use('/extension', (req, res, next) => {
     if (ALLOWED_EXTENSION.has(req.path)) return next();
+    if (req.path.endsWith(WASM_SUFFIX)) return next();
     res.status(403).type('text').send('Forbidden');
 }, express.static(extensionDir));
 

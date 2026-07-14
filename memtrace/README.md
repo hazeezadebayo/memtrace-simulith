@@ -52,11 +52,11 @@ memtrace/
 
 ## Simulation Modes
 
-| Mode | Description |
-|---|---|
-| **Mesh** | Multi-round social simulation. Agents publish posts, react to shocks, form factions, and drift beliefs across simulated platforms (Twitter, Reddit, HN, Discord, Facebook). |
-| **Council** | Strategic option evaluation. Personas debate decision branches (Aggressive, Defensive, Lateral). Mathematical scoring model computes confidence ratings. |
-| **Tree** | Monte Carlo Tree Search. LLM generates semantic operators, deterministic physics engine evaluates state transitions with pruning. |
+| Mode              | Description                                                                                                                                                                 |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Mesh**    | Multi-round social simulation. Agents publish posts, react to shocks, form factions, and drift beliefs across simulated platforms (Twitter, Reddit, HN, Discord, Facebook). |
+| **Council** | Strategic option evaluation. Personas debate decision branches (Aggressive, Defensive, Lateral). Mathematical scoring model computes confidence ratings.                    |
+| **Tree**    | Monte Carlo Tree Search. LLM generates semantic operators, deterministic physics engine evaluates state transitions with pruning.                                           |
 
 ---
 
@@ -67,6 +67,7 @@ memtrace/
 MemTrace is a **multi-agent social simulation platform** that spawns autonomous LLM-driven agents, runs them through structured interaction rounds, and measures emergent properties: belief drift, faction formation, consensus polarization, and decision confidence. It operates in three distinct simulation modes — Council, Mesh, and Tree — each with its own engine.
 
 Three separate LLM call patterns power the system:
+
 - **Generative LLM calls** — agent backstories, posts, replies, branch proposals, cross-examinations
 - **Classification LLM calls** — domain detection, sentiment scoring, edge sentiment, stance extraction
 - **Deterministic math** — transition physics, elasticity models, probability softmax, scoring heuristics
@@ -79,27 +80,28 @@ Two SQLite databases, managed via libSQL/Turso:
 
 **`data/memtrace.sqlite`** — Simulation & user state
 
-| Table | Key Columns | Purpose |
-|---|---|---|
-| `mesh_simulations` | id, uuid, scenario, tick_count, agent_count, status | Mesh simulation lifecycle |
-| `tree_simulations` | id, uuid, scenario, status | Tree simulation lifecycle |
-| `mesh_agents` | id, sim_id, name, platform, beliefs(JSON), traits | Per-simulation agent definitions |
-| `mesh_interactions` | id, sim_id, tick, agent_id, type, content | All posts, replies, likes |
-| `mesh_edges` | id, sim_id, src_agent, dst_agent, weight, valid_at | Temporal agent relationship graph |
-| `memtrace_rounds` | id, sim_id, round, global_summary, shock_event | Council round summaries |
-| `user_settings` | uuid, settings_json, cluster_version | User preferences |
-| `user_personas` | uuid+id, name, cluster, traits, wins/losses | User-created persona library |
-| `user_stats` | uuid, stats_json | Aggregated outcome statistics |
-| `user_runs` | uuid+id, run_json, created_at | Historical simulation runs |
+| Table                 | Key Columns                                         | Purpose                           |
+| --------------------- | --------------------------------------------------- | --------------------------------- |
+| `mesh_simulations`  | id, uuid, scenario, tick_count, agent_count, status | Mesh simulation lifecycle         |
+| `tree_simulations`  | id, uuid, scenario, status                          | Tree simulation lifecycle         |
+| `mesh_agents`       | id, sim_id, name, platform, beliefs(JSON), traits   | Per-simulation agent definitions  |
+| `mesh_interactions` | id, sim_id, tick, agent_id, type, content           | All posts, replies, likes         |
+| `mesh_edges`        | id, sim_id, src_agent, dst_agent, weight, valid_at  | Temporal agent relationship graph |
+| `memtrace_rounds`   | id, sim_id, round, global_summary, shock_event      | Council round summaries           |
+| `user_settings`     | uuid, settings_json, cluster_version                | User preferences                  |
+| `user_personas`     | uuid+id, name, cluster, traits, wins/losses         | User-created persona library      |
+| `user_stats`        | uuid, stats_json                                    | Aggregated outcome statistics     |
+| `user_runs`         | uuid+id, run_json, created_at                       | Historical simulation runs        |
 
 **`data/users.db`** — Auth & billing
 
-| Table | Key Columns | Purpose |
-|---|---|---|
-| `users` | id, google_id, email, memtrace_uuid, tokens | User accounts, token balances |
-| `token_requests` | id, memtrace_uuid, amount, status | Admin token approval workflow |
+| Table              | Key Columns                                 | Purpose                       |
+| ------------------ | ------------------------------------------- | ----------------------------- |
+| `users`          | id, google_id, email, memtrace_uuid, tokens | User accounts, token balances |
+| `token_requests` | id, memtrace_uuid, amount, status           | Admin token approval workflow |
 
 **`extension/db/sqlite-adapter.js`** creates a `chunks` table with FTS5 for the context memory store:
+
 - `chunks(id, uuid, text, embedding, tags, edges, url, created_at, summary, meta)` — indexed by uuid and url, with FTS5 virtual table for full-text search
 
 ---
@@ -275,7 +277,7 @@ POST /api/v4/simulate/mesh
 │  │     {like, comment, follow, ignore} → weighted sample      │  │
 │  │  3. _generateWritingActionContent() — LLM writes comment   │  │
 │  │     /reply in character                                    │  │
-│  │  4. _scoreEdgeSentiment() — LLM zero-shot: {sentiment,    │  │
+│  │  4. _scoreEdgeSentiment() — LLM zero-shot: {sentiment,     │  │
 │  │     intensity, agrees} with 3-tier fallback (LLM → lexical │  │
 │  │     → Xenova embedding cosine)                             │  │
 │  │  5. _applyBeliefNudges() — for each agent, collect         │  │
@@ -563,6 +565,7 @@ Authentication is via Google OAuth (GSI popup) + server-issued JWT stored in an 
 ## Deployment
 
 Push to `main` triggers GitHub Actions (`.github/workflows/deploy.yml`):
+
 1. Builds production Docker image from `Dockerfile.prod`
 2. Pushes to `ghcr.io/hazeezadebayo/memtrace-simulith`
 3. SSHes into Alibaba SAS, generates `.env` + `docker-compose.prod.yml`
@@ -572,13 +575,13 @@ The production stack includes a `cloudflared` sidecar that provides a public HTT
 
 ### Required GitHub Secrets
 
-| Secret | Source |
-|---|---|
-| `SAS_HOST` | Alibaba SAS public IP |
-| `SAS_USER` | SSH user (root) |
-| `SAS_SSH_KEY` | SSH private key |
-| `QWEN_API_KEY` | Qwen DashScope API key |
-| `GOOGLE_CLIENT_ID` | Google Cloud Console → Credentials |
+| Secret                      | Source                                       |
+| --------------------------- | -------------------------------------------- |
+| `SAS_HOST`                | Alibaba SAS public IP                        |
+| `SAS_USER`                | SSH user (root)                              |
+| `SAS_SSH_KEY`             | SSH private key                              |
+| `QWEN_API_KEY`            | Qwen DashScope API key                       |
+| `GOOGLE_CLIENT_ID`        | Google Cloud Console → Credentials          |
 | `CLOUDFLARE_TUNNEL_TOKEN` | Cloudflare Zero Trust → Networks → Tunnels |
 
 ---
@@ -589,11 +592,11 @@ Central config: `extension/env/config.js` (reads from environment variables).
 
 Key variables:
 
-| Variable | Default | Description |
-|---|---|---|
-| `PORT` | 3106 | API server port |
-| `LLM_PROVIDER` | localllm | LLM backend (qwen, gemini, openai, openrouter, localllm, mock) |
-| `LLM_MODEL` | LFM2-2.6B-Q5 | Model name |
-| `EMB_PROVIDER` | xenova | Embedding provider (xenova, qwen, openai) |
-| `DB_TYPE` | offline | Database mode (offline = SQLite, online = Turso/Postgres) |
-| `NODE_ENV` | development | Toggles production optimizations and secure cookies |
+| Variable         | Default      | Description                                                    |
+| ---------------- | ------------ | -------------------------------------------------------------- |
+| `PORT`         | 3106         | API server port                                                |
+| `LLM_PROVIDER` | localllm     | LLM backend (qwen, gemini, openai, openrouter, localllm, mock) |
+| `LLM_MODEL`    | LFM2-2.6B-Q5 | Model name                                                     |
+| `EMB_PROVIDER` | xenova       | Embedding provider (xenova, qwen, openai)                      |
+| `DB_TYPE`      | offline      | Database mode (offline = SQLite, online = Turso/Postgres)      |
+| `NODE_ENV`     | development  | Toggles production optimizations and secure cookies            |
