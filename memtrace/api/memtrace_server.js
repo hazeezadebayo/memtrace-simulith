@@ -174,7 +174,6 @@ app.use('/extension', (req, res, next) => {
     res.status(403).type('text').send('Forbidden');
 }, express.static(extensionDir, { maxAge: '1h', etag: true }));
 
-const JWT_SECRET = loadOrCreateJwtSecret();
 app.use('/simulith', (req, res, next) => {
     if (req.path === '/') return res.sendFile('landing.html', { root: path.join(__dirname, '..', 'simulith', 'public') });
     if (req.path === '/workspace.html') {
