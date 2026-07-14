@@ -40,7 +40,7 @@ export async function clearAllData(targetUuid = null) {
     }
   } else if (DB.db && typeof DB.db.exec === 'function') {
     if (targetUuid) {
-      await DB.db.exec(`DELETE FROM chunks WHERE uuid = '${targetUuid}'`);
+      await DB.db.exec('DELETE FROM chunks WHERE uuid = ?', [targetUuid]);
     } else {
       await DB.db.exec('DELETE FROM chunks');
     }

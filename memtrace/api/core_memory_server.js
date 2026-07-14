@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticate } from './auth_server.js';
 import { upsertChunk, getChunk, deleteChunk, search } from '../extension/core/memory.js';
+import { checkInjectionGuardrail } from '../extension/core/llm_agent.js';
 
 const router = express.Router();
 
@@ -128,6 +129,9 @@ router.post('/v1/chat', authenticate, async (req, res) => {
     try {
         const { prompt, max_tokens } = req.body;
         if (!prompt) return res.status(400).json({ error: 'prompt required' });
+
+        const guard = await checkInjectionGuardrail(prompt);
+        if (!guard.safe) return res.status(403).json({ error: guard.reason });
 
         const store = { uuid: req.user.uuid, signal: controller.signal };
         const text = await global.memtraceLlmContext.run(store, async () => {

@@ -1,41 +1,7 @@
-import { callLLM } from '../llm/ai.js';
+import { buildDivergenceSynthesisPrompt } from '../llm/prompts.js';
+import { callLLMWithSystem, REPORT_SYSTEM_PROMPT } from '../llm/ai.js';
 import { DEFAULT_CONFIG } from '../../../extension/env/config.js';
 import { runCouncil, runMesh, runTree, setAutomationState, logAutomation, clearAutomationLogs, isCancellationError } from './utils.js';
-
-const SYNTHESIS_PROMPT = `You are the MemTrace Reality Divergence Engine.
-Your purpose is to explicitly embrace contradiction. You have run the same scenario through three incompatible future simulation physics (Council, Mesh, and Tree).
-
-The system does NOT reconcile these futures. Instead, it tracks divergence as a signal.
-You are a tool for detecting instability in narratives and plans.
-
-Here are the raw summaries of the three simulations:
-
-### Council Mode (Normative reasoning & Stakeholder reactions)
-{COUNCIL_SUMMARY}
-
-### Mesh Mode (Emergent truth & Population belief contagion)
-{MESH_SUMMARY}
-
-### Tree Mode (Causal optimization & Expected utility paths)
-{TREE_SUMMARY}
-
-Your Task:
-Expose the hidden uncertainties and incompatibilities across these three models. Write a structured, professional comparative synthesis report in Markdown.
-Do not reconcile the modes, do not find a middle ground, and do not average the answers. Let the contradictions stand. You must structure the report with these exact section headings:
-
-# Reality Divergence Synthesis Report
-
-## 1. Divergence Signal Analysis
-Compare the outcomes directly. Explain how the causal physics of the Tree (expected utility) contradicts the social reality of the Mesh (belief contagion) and/or the normative logic of the Council (stakeholder consensus). Be specific: cite conflicting outcomes, stance values, and stakeholder positions.
-
-## 2. Instability & Plan Vulnerabilities
-Identify which parts of the proposed plan are most vulnerable to these contradictions. Focus on friction points where stakeholder rejection, public belief shifts, or causal chain failures create critical exposure.
-
-## 3. The Uncertainty Moat
-Synthesize the boundaries of what is knowable vs. unknowable based on this divergence. Outline the key risk anchors that the planner must monitor.
-
-IMPORTANT: Your analysis must be grounded purely in the provided simulation data. Do not invent external facts, or default to general descriptions. Avoid circular narratives that restate the task. Keep it concise, authoritative, and analytical.
-`;
 
 export async function runDivergenceAnalysis(baseUrl, token, payload, runSequentially = true, signal) {
   const query = payload.question || payload.decision || '';
@@ -175,10 +141,7 @@ export async function runDivergenceAnalysis(baseUrl, token, payload, runSequenti
       decision_space: treeResult.decisionSpace?.decision_summary
     });
 
-  const prompt = SYNTHESIS_PROMPT
-    .replace('{COUNCIL_SUMMARY}', councilSummary)
-    .replace('{MESH_SUMMARY}', meshSummary)
-    .replace('{TREE_SUMMARY}', treeSummary);
+  const prompt = buildDivergenceSynthesisPrompt({ councilSummary, meshSummary, treeSummary });
 
   setAutomationState(payload.uuid, 'SYNTHESIZING DIVERGENCE REPORT...');
   logAutomation(payload.uuid, 'divergence', 'Synthesizing reality divergence report...');
@@ -188,7 +151,7 @@ export async function runDivergenceAnalysis(baseUrl, token, payload, runSequenti
 
   let synthesisReport;
   try {
-    synthesisReport = await callLLM(prompt);
+    synthesisReport = await callLLMWithSystem(REPORT_SYSTEM_PROMPT, prompt);
     logAutomation(payload.uuid, 'divergence', 'Divergence report synthesis completed.');
   } catch (e) {
     if (isCancellationError(e, signal)) throw e;

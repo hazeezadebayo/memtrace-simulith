@@ -1,4 +1,5 @@
-import { callLLM, parseJson } from '../llm/ai.js';
+import { buildExecutiveBriefPrompt } from '../llm/prompts.js';
+import { callLLM, callLLMWithSystem, parseJson, REPORT_SYSTEM_PROMPT } from '../llm/ai.js';
 import { getEmbedding, cosineSimilarity } from '../../../extension/llm/embedding.js';
 
 export async function determineDomainAndAudience(question, facts) {
@@ -469,28 +470,8 @@ export async function proposeGenerativeReactions(persona, branches, scenario, ev
 }
 
 export async function generateExecutiveBrief(scenario, branch, emit = () => { }) {
-  const prompt = `
-    You are a premium strategic advisor providing a $10,000 consultation summary.
-    
-    Context Question: ${scenario.question}
-    Domain: ${scenario.domain}
-    Audience: ${scenario.audience}
-    
-    The recommended action is:
-    Title: ${branch.title}
-    Action: ${branch.action}
-    Why it was chosen (raw data): ${branch.why?.join(', ')}
-    
-    Write a highly professional, bespoke, and compelling "Strategic Directive" (2-3 sentences) explaining why this is the optimal path. Do NOT use generic AI language or list raw data. Be authoritative and insightful.
-    Also provide a separate "Councilal Vulnerability" (1 sentence) identifying what specific new information or event would invalidate this strategy.
-    
-    Return JSON format exactly like this:
-    {
-      "executiveBrief": "...",
-      "councilalFactor": "..."
-    }
-  `;
-  const result = await callLLM(prompt, 0.7);
+  const prompt = buildExecutiveBriefPrompt({ scenario, branch });
+  const result = await callLLMWithSystem(REPORT_SYSTEM_PROMPT, prompt, 0.7);
   if (!result) {
     emit('llm_error', 'Executive brief LLM returned empty response.');
     return { executiveBrief: 'Proceed with this branch as the optimal path based on available evidence.', councilalFactor: 'Monitor for strong contradictory evidence.' };

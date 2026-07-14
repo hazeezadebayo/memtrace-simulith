@@ -13,7 +13,8 @@
 import { beliefDelta } from '../agents/belief_state.js';
 import { getEnvironmentalState } from '../utils/extra.js';
 import { scoreBranches } from './scoring.js';
-import { callLLM } from '../llm/ai.js';
+import { buildVerdictPrompt } from '../llm/prompts.js';
+import { callLLMWithSystem, REPORT_SYSTEM_PROMPT } from '../llm/ai.js';
 import { DEFAULT_CONFIG } from '../../../extension/env/config.js';
 import { DOMAIN_POWER_MULTIPLIERS } from '../data/manifest.js';
 
@@ -303,38 +304,13 @@ async function _computeVerdict(consensus, agents, interactions = [], branches = 
       if (interviews?.synthesis) {
         interviewSection = `\n<hypothetical_interviews>\n[POST-SIMULATION QUALITATIVE INTERVIEWS SYNTHESIS]\n(Note: This section explores hypothetical "What-If" scenarios to test agent boundaries. These are NOT facts of the original scenario.)\n${interviews.synthesis}\n</hypothetical_interviews>\n`;
       }
-      const prompt = `
-You are the Mesh Intelligence Verdict Synthesizer.
-Analyze the following simulation results:
+      const prompt = buildVerdictPrompt({
+        scenarioQuestion, scenarioFacts, activeDomain, cleanTopicName,
+        supportiveWeight, supportiveSummary, skepticalWeight,
+        skepticalSummary, interviewSection
+      });
 
-<scenario_question>${scenarioQuestion}</scenario_question>
-<factual_context>
-${scenarioFacts}
-</factual_context>
-<active_domain>${activeDomain}</active_domain>
-<topic_under_review>${cleanTopicName}</topic_under_review>
-
-<supportive_camp weight="${supportiveWeight.toFixed(2)}">
-${supportiveSummary}
-</supportive_camp>
-
-<skeptical_camp weight="${skepticalWeight.toFixed(2)}">
-${skepticalSummary}
-</skeptical_camp>
-${interviewSection}
-SYSTEMIC VERDICT DETERMINATION:
-- If Supportive Weight (${supportiveWeight.toFixed(2)}) is significantly larger, pick the Supportive camp as the victor.
-- If Skeptical Weight (${skepticalWeight.toFixed(2)}) is significantly larger, pick the Skeptical camp as the victor.
-- If they are extremely close, choose based on the core structural conflict (Systemic Deadlock).
-
-INSTRUCTIONS:
-1. First, use a 3-sentence <think> block to explicitly list what is a FACT (from factual_context) vs what is a HYPOTHESIS (from hypothetical_interviews).
-2. Synthesize a single, definitive, professional paragraph (max 3 sentences) explaining the mesh's decision/verdict. You MUST pick a definitive victor/direction based on the systemic weights above.
-3. Reference the key driving faction brokers and their primary arguments.
-4. IMPORTANT: Do NOT invent or hallucinate facts, numbers, or conditions that were not in the original factual_context. Use the hypothetical_interviews ONLY to understand agent nuance and edge cases, but do NOT present hypothetical conditions (like fake funds or mentors) as established facts of the main verdict. Speak with authority and senior-level analysis.
-`.trim();
-
-      const response = await callLLM(prompt);
+      const response = await callLLMWithSystem(REPORT_SYSTEM_PROMPT, prompt);
       if (response && response.trim().length > 0) {
         summary = response.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
       }

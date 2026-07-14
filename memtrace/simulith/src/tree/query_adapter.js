@@ -14,17 +14,15 @@
      translates each one into a plain-English "Dominant Future" card
      that a non-technical user can read and act on.
    ================================================================== */
-import { callLLM as rawCallLLM } from "../llm/ai.js";
+import { callLLMWithSystem, REPORT_SYSTEM_PROMPT } from "../llm/ai.js";
+import { buildDominantFuturesPrompt, buildDecisionSpacePrompt } from "../llm/prompts.js";
 import { getEmbedding, cosineSimilarity } from "../../../extension/llm/embedding.js";
 import {
   parseJsonObjectFromText,
   parseJsonArrayFromText,
-  safeStringify,
   clamp,
   toFiniteNumber,
 } from "../utils/tree_runtime_utils.js";
-
-const callLLM = typeof rawCallLLM === "function" ? rawCallLLM : async () => "";
 
 function normalizeTextKey(value) {
   return String(value ?? "")
@@ -234,37 +232,6 @@ class FutureNarrativeComposer {
         stakeholder_impacts: stakeholderImpacts,
       };
     });
-  }
-
-  buildPrompt(pathDescriptors) {
-    return `You are the Decision Interpreter for a causal forecasting system.
-
-A user asked: ${JSON.stringify(this.decision)}
-
-The simulation has computed ${pathDescriptors.length} dominant futures.
-
-Write a distinct narrative for each future. The fields must be different across futures whenever the path content differs.
-Signal must be an observable indicator, not a restatement of the action.
-Action must be a concrete step the user can take now, not a prediction.
-Do not reuse the same phrasing across multiple futures.
-Do not use generic placeholders.
-Do not use titles like "Future 1" or "Scenario A".
-
-COMPUTED FUTURES:
-${safeStringify(pathDescriptors, "[]")}
-
-Return a JSON array of objects, one object per future.
-Each object must have exactly these keys:
-- title: A highly distinct and specific 5-8 word headline that highlights the unique final step or differentiating theme of this future
-- probability_label: e.g. "Very Likely (78%)" or "Possible (34%)"
-- outcome: 2-3 sentences in plain, direct language describing what this future looks like for the user
-- main_risk: One specific sentence naming the biggest danger in this path
-- main_upside: One specific sentence naming the best opportunity in this path
-- signal: One observable thing the user can watch to know this future is unfolding
-- action: One concrete thing the user could do RIGHT NOW to navigate this future
-- sentiment: "positive", "negative", or "neutral"
-
-Return ONLY valid JSON.`;
   }
 
   sanitizeNarrativeItem(item) {
@@ -555,11 +522,11 @@ Return ONLY valid JSON.`;
 
   async compose() {
     const pathDescriptors = this.buildPathDescriptors();
-    const prompt = this.buildPrompt(pathDescriptors);
+    const prompt = buildDominantFuturesPrompt({ decision: this.decision, pathDescriptors });
 
     let raw = "[]";
     try {
-      raw = (await callLLM(prompt, 0.4)) || "[]";
+      raw = (await callLLMWithSystem(REPORT_SYSTEM_PROMPT, prompt, 0.4)) || "[]";
     } catch (e) {
       if (e.name === 'AbortError' || e.message === 'Simulation Cancelled by user.') throw e;
       console.warn("[QueryAdapter] explainDominantFutures LLM call failed:", e.message);
@@ -714,66 +681,11 @@ export async function generateDecisionSpace(decision, context, baseOntology) {
     (s) => s.id || s.label || String(s)
   );
 
-  const prompt = `You are the Decision Space Adapter for a causal simulation engine.
-
-Your job has two parts:
-
-PART A — Human Labels
-Map every existing variable, operator, and stakeholder ID to a short, plain-English
-human-readable label (3-6 words max). Users are not engineers. No snake_case. No jargon.
-
-PART B — Query-Specific Additions (Optional)
-If the user decision has important factors that are NOT captured by the existing variables/operators/stakeholders,
-add up to 3 new variables, 3 new operators, and 2 new stakeholders.
-Each new variable must have: min (0), max (1), defaultValue (0-1), and a plain description.
-Each new operator must have: description (plain English), base_effects (object mapping variable names to {magnitude, elasticity}), dynamic_effects (array of variable names).
-New operator base_effects MUST only reference variables that exist in the existing OR new variable lists.
-
-USER DECISION:
-${JSON.stringify(String(decision ?? ""))}
-
-CONTEXT:
-${JSON.stringify(String(context ?? ""))}
-
-EXISTING VARIABLES:
-${safeStringify(existingVarNames, "[]")}
-
-EXISTING OPERATORS:
-${safeStringify(existingOpNames, "[]")}
-
-EXISTING STAKEHOLDERS:
-${safeStringify(existingStakeholders, "[]")}
-
-Return ONLY valid JSON with this exact structure:
-{
-  "decision_summary": "one sentence describing the decision in plain English",
-  "variable_labels": {
-    "existing_var_id": "Human Readable Label",
-    ...
-  },
-  "operator_labels": {
-    "existing_op_id": "Human Readable Description",
-    ...
-  },
-  "stakeholder_labels": {
-    "existing_stakeholder_id": "Human Readable Name",
-    ...
-  },
-  "variables": {
-    "new_var_id": { "min": 0, "max": 1, "defaultValue": 0.5, "description": "..." }
-  },
-  "operators": {
-    "new_op_id": { "description": "...", "base_effects": {}, "dynamic_effects": [] }
-  },
-  "stakeholders": [],
-  "interactions": []
-}
-
-If no additions are needed, leave "variables", "operators", "stakeholders", "interactions" as empty objects/arrays.`;
+  const prompt = buildDecisionSpacePrompt({ decision, context, existingVarNames, existingOpNames, existingStakeholders });
 
   let raw = "{}";
   try {
-    raw = await callLLM(prompt, 0.3);
+    raw = await callLLMWithSystem(REPORT_SYSTEM_PROMPT, prompt, 0.3);
   } catch (e) {
     if (e.name === 'AbortError' || e.message === 'Simulation Cancelled by user.') throw e;
     console.warn("[QueryAdapter] generateDecisionSpace LLM call failed:", e.message);

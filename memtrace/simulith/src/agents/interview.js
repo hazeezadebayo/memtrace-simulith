@@ -3,7 +3,8 @@
    ReporterAgent: Conducts post-simulation counterfactual interviews
    ================================================================== */
 
-import { callLLM } from '../llm/ai.js';
+import { buildSynthesisPrompt } from '../llm/prompts.js';
+import { callLLM, callLLMWithSystem, REPORT_SYSTEM_PROMPT } from '../llm/ai.js';
 import { DEFAULT_CONFIG } from '../../../extension/env/config.js';
 
 /**
@@ -110,27 +111,11 @@ Answer in character, 2-3 sentences max. Write ONLY the response.`.trim();
     return `${inv.agentName} (${inv.faction}): ${turnsText}`;
   }).join('\n').slice(0, pl.interviewHistory);
 
-  const synthesisPrompt = `
-You are the Mesh Qualitative Synthesis Reporter.
-Analyze the following post-simulation interviews conducted with the personas:
-
-Scenario under review: "${scenario.question}"
-Factual Context: ${(scenario.facts || []).join('; ').slice(0, pl.facts)}
-
-INTERVIEW TRANSCRIPTS:
-${allInterviewsText}
-
-Compile a comprehensive qualitative synthesis report. Focus on:
-1. Key counterfactual insights: How do agents react to hypothetical shifts or alternative policy paths?
-2. Hidden consensus or deep-seated dissent that didn't fully surface on social media.
-3. Factional vulnerabilities and strategic trade-offs explored during the interviews.
-
-Write a detailed, structured analysis. Keep it professional, objective, and under 300 words. Do not use placeholders.
-`.trim();
+  const synthesisPrompt = buildSynthesisPrompt({ scenario, pl, allInterviewsText });
 
   let synthesis = 'Unable to synthesize qualitative interview results.';
   try {
-    const response = await callLLM(synthesisPrompt);
+    const response = await callLLMWithSystem(REPORT_SYSTEM_PROMPT, synthesisPrompt);
     const cleanS = String(response || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
     if (cleanS) synthesis = cleanS;
   } catch (e) {

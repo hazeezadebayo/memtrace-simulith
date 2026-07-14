@@ -9,7 +9,7 @@ import { DEFAULT_CONFIG } from '../env/config.js';
  * Isolated call to Qwen's DashScope text-generation API.
  * Uses the compatible chat/completions endpoint.
  */
-export async function callQwen(apiKey, prompt, model = 'qwen-turbo', temperature = undefined, signal = undefined) {
+export async function callQwen(apiKey, prompt, model = 'qwen-turbo', temperature = undefined, signal = undefined, systemMsg = undefined) {
     console.log(`[Qwen Adapter] Calling ${model}...`);
 
     // dashscopeApiKey if provided, else fallback to standard apiKey in config
@@ -18,9 +18,10 @@ export async function callQwen(apiKey, prompt, model = 'qwen-turbo', temperature
     const { release, limiter } = await rateLimit('qwen');
     try {
         const url = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions';
+        const messages = systemMsg ? [{ role: 'system', content: systemMsg }, { role: 'user', content: prompt }] : [{ role: 'user', content: prompt }];
         const body = {
             model: model,
-            messages: [{ role: 'user', content: prompt }],
+            messages,
             enable_thinking: true
         };
 

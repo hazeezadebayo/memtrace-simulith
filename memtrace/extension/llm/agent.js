@@ -9,12 +9,13 @@ import { DEFAULT_CONFIG } from '../env/config.js';
 /* -----------------------------------------------------------------
    GEMINI CLIENT
    ----------------------------------------------------------------- */
-export async function callGemini(apiKey, prompt, model = 'gemini-2.5-flash-lite', temperature = undefined, signal = undefined) {
+export async function callGemini(apiKey, prompt, model = 'gemini-2.5-flash-lite', temperature = undefined, signal = undefined, systemMsg = undefined) {
     const { release, limiter } = await rateLimit(apiKey || 'gemini');
     try {
         const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
         const body = {
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            ...(systemMsg ? { system_instruction: { parts: [{ text: systemMsg }] } } : {}),
             generationConfig: { temperature: temperature !== undefined ? temperature : 0.3, topP: 0.9, maxOutputTokens: DEFAULT_CONFIG.max_tokens || 1024 }
         };
         const r = await withBackoff(() => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal }), 3, 1000, signal);
@@ -35,11 +36,12 @@ export async function callGemini(apiKey, prompt, model = 'gemini-2.5-flash-lite'
 /* -----------------------------------------------------------------
    OPENAI CLIENT
    ----------------------------------------------------------------- */
-export async function callOpenAI(apiKey, prompt, model = 'gpt-4o-mini', temperature = undefined, signal = undefined) {
+export async function callOpenAI(apiKey, prompt, model = 'gpt-4o-mini', temperature = undefined, signal = undefined, systemMsg = undefined) {
     const { release, limiter } = await rateLimit(apiKey || 'openai');
     try {
         const url = 'https://api.openai.com/v1/chat/completions';
-        const body = { model, messages: [{ role: 'user', content: prompt }], temperature: temperature !== undefined ? temperature : 0.3, max_tokens: DEFAULT_CONFIG.max_tokens || 1024 };
+        const messages = systemMsg ? [{ role: 'system', content: systemMsg }, { role: 'user', content: prompt }] : [{ role: 'user', content: prompt }];
+        const body = { model, messages, temperature: temperature !== undefined ? temperature : 0.3, max_tokens: DEFAULT_CONFIG.max_tokens || 1024 };
         const r = await withBackoff(() => fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
@@ -63,14 +65,15 @@ export async function callOpenAI(apiKey, prompt, model = 'gpt-4o-mini', temperat
 /* -----------------------------------------------------------------
    OPENROUTER CLIENT
    ----------------------------------------------------------------- */
-export async function callOpenRouter(apiKey, prompt, model = 'anthropic/claude-3-haiku', temperature = undefined, signal = undefined) {
+export async function callOpenRouter(apiKey, prompt, model = 'anthropic/claude-3-haiku', temperature = undefined, signal = undefined, systemMsg = undefined) {
     console.log(`[OpenRouter] Calling ${model}...`);
     const { release, limiter } = await rateLimit(apiKey || 'openrouter');
     try {
         const url = 'https://openrouter.ai/api/v1/chat/completions';
+        const messages = systemMsg ? [{ role: 'system', content: systemMsg }, { role: 'user', content: prompt }] : [{ role: 'user', content: prompt }];
         const body = { 
             model, 
-            messages: [{ role: 'user', content: prompt }],
+            messages,
             headers: {
                 "HTTP-Referer": "https://memtrace.ai",
                 "X-Title": "MemTrace Decision Engine"
@@ -103,9 +106,10 @@ export async function callOpenRouter(apiKey, prompt, model = 'anthropic/claude-3
 /* -----------------------------------------------------------------
    LOCAL LLM CLIENT
    ----------------------------------------------------------------- */
-export async function callLocalLLM(prompt, signal = undefined) {
+export async function callLocalLLM(prompt, signal = undefined, systemMsg = undefined) {
     try {
-        const cleanPrompt = typeof prompt === 'string' ? prompt.trim() : '';
+        const fullPrompt = systemMsg ? `System: ${systemMsg}\n\nUser: ${prompt}` : prompt;
+        const cleanPrompt = typeof fullPrompt === 'string' ? fullPrompt.trim() : '';
         const lowerPrompt = cleanPrompt.toLowerCase();
         if (lowerPrompt === 'localllm' || lowerPrompt === 'local llm' || lowerPrompt === 'local_llm') {
             console.log(`[LocalLLM] Intercepted informational query "${cleanPrompt}". Returning local config documentation.`);
