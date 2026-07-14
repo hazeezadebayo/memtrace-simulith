@@ -69,7 +69,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    if (data.token) localStorage.setItem('simulith_token', data.token);
+                    // token stored in HttpOnly cookie by server
                     window.location.href = '/simulith/workspace.html';
                 } else {
                     alert('Login failed: ' + data.error);

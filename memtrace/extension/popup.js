@@ -607,7 +607,7 @@ async function getOrchestrator() {
 
     const adapter = {
         embed: async (text) => {
-            const res = await fetch('/api/llm/embed', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text }) });
+            const res = await fetch('/api/llm/embed', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text, uuid: deviceUUID }) });
             return (await res.json()).embedding;
         },
         validate: async () => {
@@ -620,15 +620,15 @@ async function getOrchestrator() {
         },
         getConfig: async () => (await fetch('/api/llm/config')).json(),
         summarize: async (text, maxWords) => {
-            const res = await fetch('/api/llm/summarize', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text, maxWords }) });
+            const res = await fetch('/api/llm/summarize', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text, maxWords, uuid: deviceUUID }) });
             return (await res.json()).summary;
         },
         tag: async (text) => {
-            const res = await fetch('/api/llm/tags', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text }) });
+            const res = await fetch('/api/llm/tags', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text, uuid: deviceUUID }) });
             return (await res.json()).tags;
         },
         generateAnswer: async (formatted, query) => {
-            const res = await fetch('/api/llm/generate-answer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ formatted, query }) });
+            const res = await fetch('/api/llm/generate-answer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ formatted, query, uuid: deviceUUID }) });
             return (await res.json()).answer;
         }
     };

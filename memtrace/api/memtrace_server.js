@@ -38,6 +38,13 @@ app.use(cookieParser());
 app.use(rateLimiter);
 app.disable('x-powered-by');
 
+app.use((req, res, next) => {
+    res.setHeader('Content-Security-Policy',
+        "default-src 'self'; script-src 'self' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://rsms.me; font-src 'self' https://rsms.me; img-src 'self' data:; frame-src 'self' https://accounts.google.com; connect-src 'self'"
+    );
+    next();
+});
+
 // === AUTHENTICATION ===
 app.use('/api/auth', authRouter);
 
@@ -67,21 +74,71 @@ app.get('/api/config', (req, res) => {
 
 // === LLM PROXY ENDPOINTS (keeps API keys server-side) ===
 import { summarizeChunk, generateTags, getEmbedding } from '../extension/core/llm_agent.js';
+import { enforceOrigin } from './auth_server.js';
 
-app.post('/api/llm/summarize', async (req, res) => {
+const JWT_SECRET = loadOrCreateJwtSecret();
+
+// Tighter per-IP rate limiter for LLM endpoints (costs real $ per call)
+const llmHits = new Map();
+const LLM_WINDOW_MS = 60_000;
+const LLM_LIMIT = 10;
+function llmRateLimiter(req, res, next) {
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    const now = Date.now();
+    let data = llmHits.get(ip);
+    if (!data) { data = { count: 0, start: now }; llmHits.set(ip, data); }
+    if (now - data.start > LLM_WINDOW_MS) { data.count = 0; data.start = now; }
+    data.count++;
+    if (data.count > LLM_LIMIT) {
+        return res.status(429).json({ error: 'Too Many LLM Requests', retryAfter: Math.ceil((data.start + LLM_WINDOW_MS - now) / 1000) });
+    }
+    next();
+}
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, data] of llmHits.entries()) { if (now - data.start > LLM_WINDOW_MS) llmHits.delete(ip); }
+}, LLM_WINDOW_MS);
+
+// Identify caller: prefers JWT auth, falls back to device UUID
+function identify(req, res, next) {
+    let token = req.cookies?.auth_token;
+    if (!token && req.headers.authorization) {
+        const match = req.headers.authorization.match(/^Bearer\s+(\S+)$/);
+        if (match) token = match[1];
+    }
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            req.user = decoded;
+            req.userId = decoded.uuid;
+            return next();
+        } catch (e) { /* invalid/expired — fall through */ }
+    }
+    const { uuid } = req.body;
+    if (uuid) {
+        req.userId = uuid;
+        return next();
+    }
+    return res.status(401).json({ error: 'Unauthorized: login or provide device uuid' });
+}
+
+app.post('/api/llm/summarize', enforceOrigin, llmRateLimiter, identify, async (req, res) => {
     const { text, maxWords } = req.body;
+    if (!text) return res.status(400).json({ error: 'Missing text field' });
     const summary = await summarizeChunk(text, maxWords || 75, DEFAULT_CONFIG.llm_provider, DEFAULT_CONFIG.apiKey);
     res.json({ summary });
 });
 
-app.post('/api/llm/tags', async (req, res) => {
+app.post('/api/llm/tags', enforceOrigin, llmRateLimiter, identify, async (req, res) => {
     const { text } = req.body;
+    if (!text) return res.status(400).json({ error: 'Missing text field' });
     const tags = await generateTags(text, DEFAULT_CONFIG.llm_provider, DEFAULT_CONFIG.apiKey);
     res.json({ tags });
 });
 
-app.post('/api/llm/embed', async (req, res) => {
+app.post('/api/llm/embed', enforceOrigin, llmRateLimiter, identify, async (req, res) => {
     const { text } = req.body;
+    if (!text) return res.status(400).json({ error: 'Missing text field' });
     const embedding = await getEmbedding(text, DEFAULT_CONFIG.emb_provider, DEFAULT_CONFIG.apiKey);
     res.json({ embedding });
 });
@@ -94,8 +151,9 @@ app.get('/api/llm/config', (req, res) => {
     });
 });
 
-app.post('/api/llm/generate-answer', async (req, res) => {
+app.post('/api/llm/generate-answer', enforceOrigin, llmRateLimiter, identify, async (req, res) => {
     const { formatted, query } = req.body;
+    if (!formatted || !query) return res.status(400).json({ error: 'Missing formatted or query fields' });
     const { buildContextForQuery } = await import('../extension/core/llm_agent.js');
     const answer = await buildContextForQuery(formatted, query, DEFAULT_CONFIG);
     res.json({ answer });
