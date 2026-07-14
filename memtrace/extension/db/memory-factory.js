@@ -11,25 +11,30 @@ export class MemoryFactory {
         console.log(`[MemoryFactory] Initializing ${mode} storage...`);
 
         if (mode === 'online') {
-            const provider = config.online_db_provider || 'alibaba';
-            console.log(`[MemoryFactory] Online provider selected: ${provider}`);
-
             const isNode = typeof window === 'undefined';
 
-            if (provider === 'alibaba' && isNode) {
-                const { AlibabaCloudAdapter } = await import('./alibaba_cloud_rds_adapter.js');
-                const db = new AlibabaCloudAdapter(config);
-                await db.init();
-                return db;
-            }
-            if (provider === 'turso') {
+            if (!isNode) {
+                console.log(`[MemoryFactory] Frontend detected. Using RemoteAdapter.`);
                 const { RemoteAdapter } = await import('./remote-adapter.js');
                 const db = new RemoteAdapter(config);
                 await db.init();
                 return db;
             }
-            if (provider === 'postgres' && isNode) {
+
+            const provider = config.online_db_provider || 'alibaba';
+            console.log(`[MemoryFactory] Backend online provider selected: ${provider}`);
+
+            if (provider === 'alibaba') {
+                const { AlibabaCloudAdapter } = await import('./alibaba_cloud_rds_adapter.js');
+                const db = new AlibabaCloudAdapter(config);
+                await db.init();
+                return db;
+            }
+            if (provider === 'postgres') {
                 return createMemoryStore('postgres', config);
+            }
+            if (provider === 'turso') {
+                return createMemoryStore('sqlite', config);
             }
             throw new Error(`Unknown online DB provider: ${provider}`);
         }
