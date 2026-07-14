@@ -2040,7 +2040,7 @@ async function runRouterScenario() {
           const response = await fetch(`/api/v4/runs/${simResult.id}/branches/${branchId}/resimulate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ evidence: newEvidence })
+            body: JSON.stringify({ newEvidence })
           });
           const resJob = await response.json();
           if (!response.ok) throw new Error(resJob.error || 'Resimulation failed');

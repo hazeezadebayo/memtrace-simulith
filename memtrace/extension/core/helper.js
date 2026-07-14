@@ -105,8 +105,10 @@ export async function estimateTokens(text) {
    3. DEVICE & URL HELPERS
    ----------------------------------------------------------------- */
 export async function getDeviceUUID() {
+    const isExtension = typeof window !== 'undefined' && window.location.protocol.startsWith('chrome-extension');
+    const API_BASE = isExtension ? 'http://localhost:3106' : '';
     try {
-        const res = await fetch('/api/auth/me');
+        const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' });
         if (res.ok) {
             const data = await res.json();
             if (data.uuid) {

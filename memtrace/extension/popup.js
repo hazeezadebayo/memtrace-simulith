@@ -32,8 +32,11 @@
 import { ThreadletOrchestrator } from './core/orchestrator.js';
 
 async function getDeviceUUID() {
+    const isExtension = window.location.protocol.startsWith('chrome-extension');
+    const API_BASE = isExtension ? 'http://localhost:3106' : '';
+    window.API_BASE = API_BASE; // Expose globally for other functions
     try {
-        const res = await fetch('/api/auth/me');
+        const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' });
         if (res.ok) { const data = await res.json(); if (data.uuid) {
             if (window.chrome?.storage?.local) await chrome.storage.local.set({ deviceUUID: data.uuid });
             else localStorage.setItem('deviceUUID', data.uuid);
@@ -143,7 +146,8 @@ async function init() {
     // Initialize via Singleton Orchestrator in ONLINE mode to sync with the Web App Backend
     const orch = await getOrchestrator();
     try {
-        await orch.init(deviceUUID, 'online', { online_db_provider: 'turso', apiBaseUrl: '' });
+        const apiBase = typeof window.API_BASE !== 'undefined' ? window.API_BASE : '';
+        await orch.init(deviceUUID, 'online', { online_db_provider: 'turso', apiBaseUrl: apiBase });
     } catch (e) {
         console.warn('[Popup] Storage init failed (UI remains functional):', e);
     }
@@ -605,30 +609,31 @@ let _clipboard = null; // { uuid, ref, index }
 async function getOrchestrator() {
     if (_orchestrator) return _orchestrator;
 
+    const apiBase = typeof window.API_BASE !== 'undefined' ? window.API_BASE : '';
     const adapter = {
         embed: async (text) => {
-            const res = await fetch('/api/llm/embed', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text, uuid: deviceUUID }) });
+            const res = await fetch(`${apiBase}/api/llm/embed`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text, uuid: deviceUUID }) });
             return (await res.json()).embedding;
         },
         validate: async () => {
             try {
-                const res = await fetch('/api/llm/config');
+                const res = await fetch(`${apiBase}/api/llm/config`);
                 const cfg = await res.json();
                 if (!cfg?.llm_provider || !cfg?.emb_provider || !cfg?.configured) return { error: 'Missing configuration (API Key or Provider)' };
                 return true;
             } catch(e) { return { error: 'Cannot reach server' }; }
         },
-        getConfig: async () => (await fetch('/api/llm/config')).json(),
+        getConfig: async () => (await fetch(`${apiBase}/api/llm/config`)).json(),
         summarize: async (text, maxWords) => {
-            const res = await fetch('/api/llm/summarize', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text, maxWords, uuid: deviceUUID }) });
+            const res = await fetch(`${apiBase}/api/llm/summarize`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text, maxWords, uuid: deviceUUID }) });
             return (await res.json()).summary;
         },
         tag: async (text) => {
-            const res = await fetch('/api/llm/tags', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text, uuid: deviceUUID }) });
+            const res = await fetch(`${apiBase}/api/llm/tags`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text, uuid: deviceUUID }) });
             return (await res.json()).tags;
         },
         generateAnswer: async (formatted, query) => {
-            const res = await fetch('/api/llm/generate-answer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ formatted, query, uuid: deviceUUID }) });
+            const res = await fetch(`${apiBase}/api/llm/generate-answer`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ formatted, query, uuid: deviceUUID }) });
             return (await res.json()).answer;
         }
     };

@@ -1097,3 +1097,48 @@ Output:
 ... (success message, pushed to main)
 ```
 
+## 2026-07-14T20:31:09Z
+
+Command: `git add . && git commit -m "fix: resolve MIME type mismatch on static assets and h1 validation warning" && git push origin main`
+
+Output:
+```
+[main 24ce7c8] fix: resolve MIME type mismatch on static assets and h1 validation warning
+ 5 files changed, 16 insertions(+), 4 deletions(-)
+... (success message, pushed to main)
+```
+
+
+### npm run build:popup
+```
+
+> memtrace@1.0.0 build:popup
+> esbuild extension/popup.js --bundle --outfile=extension/popup.bundle.js --format=esm --platform=browser --external:@xenova/transformers --external:fs --external:path --external:node:async_hooks --external:@libsql/client
+
+▲ [WARNING] The CommonJS "module" variable is treated as a global variable in an ECMAScript module and may not work as expected [commonjs-variable-in-esm]
+
+    extension/db/sql/sql-wasm.js:129:465:
+      129 │ ...fined" != typeof module && (module.exports = f) } else if (aa ...
+          ╵                                ~~~~~~
+
+  This file is considered to be an ECMAScript module because of the "export" keyword here:
+
+    extension/db/sql/sql-wasm.js:344:0:
+      344 │ export default initSqlJs;
+          ╵ ~~~~~~
+
+▲ [WARNING] Using direct eval with a bundler is not recommended and may cause problems [direct-eval]
+
+    extension/utils/transformers.min.js:34:62194:
+      34 │ ...quire(moduleName){try{var mod=eval("quire".replace(/^/,"re"))(m...
+         ╵                                  ~~~~
+
+  You can read more about direct eval and bundling here: https://esbuild.github.io/link/direct-eval
+
+2 warnings
+
+  extension/popup.bundle.js  1.4mb ⚠️
+
+⚡ Done in 71ms
+```
+
