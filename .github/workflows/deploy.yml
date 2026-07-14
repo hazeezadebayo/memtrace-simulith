@@ -47,16 +47,18 @@ jobs:
             const p = require('./memtrace/package.json');
             delete p.devDependencies;
             delete p.jest;
+            const keepScripts = ['start', 'build:popup'];
             if (p.dependencies) {
               delete p.dependencies['node-llama-cpp'];
               delete p.dependencies['bytenode'];
               delete p.dependencies['javascript-obfuscator'];
-              delete p.dependencies['esbuild'];
             }
-            p.scripts = { start: p.scripts.start || 'node api/memtrace_server.js' };
+            p.scripts = Object.fromEntries(
+              keepScripts.filter(s => p.scripts[s]).map(s => [s, p.scripts[s]])
+            );
             require('fs').writeFileSync('./memtrace/package.json', JSON.stringify(p, null, 2));
           "
-          echo "Stripped node-llama-cpp, bytenode, obfuscator, esbuild from dependencies"
+          echo "Stripped node-llama-cpp, bytenode, obfuscator from dependencies"
 
       # ── Log in to GitHub Container Registry ──────────────────────────
       - name: Log in to GHCR
