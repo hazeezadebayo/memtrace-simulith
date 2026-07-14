@@ -127,8 +127,8 @@ test('POST /api/v4/runs/:id/branches/:branchId/resimulate — resimulate branch'
   const res = await request.post(`/api/v4/runs/${runId}/branches/${branchId}/resimulate`)
     .set(h1())
     .send({ newEvidence: 'The market has shifted dramatically.' });
-  expect(res.status).toBe(200);
-  expect(res.body).toHaveProperty('updatedBranch');
+  expect(res.status).toBe(202);
+  expect(res.body).toHaveProperty('jobId');
 });
 
 test('POST /api/v4/runs/:id/branches/:branchId/resimulate — 400 missing newEvidence', async () => {

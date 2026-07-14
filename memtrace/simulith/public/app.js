@@ -2151,17 +2151,15 @@ function switchDivergenceTab(tabName, rawResults) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ newEvidence })
           });
-          const resData = await response.json();
-          if (!response.ok) throw new Error(resData.error || 'Resimulation failed');
+          const resJob = await response.json();
+          if (!response.ok) throw new Error(resJob.error || 'Resimulation failed');
+
+          logConsole(`RESIMULATION QUEUED: ${resJob.jobId}`, 'system');
+          const finalResult = await pollJob(resJob.jobId, '/api/v4/jobs');
           logConsole('RESIMULATION COMPLETE.', 'success');
           
           // Update cached results and switch tab to update view
-          const updated = resData.updatedBranch;
-          const branchIndex = councilResult.branches.findIndex(b => b.id === branchId);
-          if (branchIndex >= 0) {
-              councilResult.branches[branchIndex] = updated;
-          }
-          rawResults.council = councilResult;
+          rawResults.council = finalResult;
           switchDivergenceTab('council', rawResults);
         } catch (err) {
           logConsole(`RESIMULATION ERROR: ${err.message}`, 'error');

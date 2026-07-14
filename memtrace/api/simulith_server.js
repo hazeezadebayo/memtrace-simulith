@@ -26,6 +26,78 @@ export const queue = new JobQueue({
   processJob: async (payload, emit, job) => {
     resetLLMCallCount();
     try {
+      if (payload.type === 'resimulate') {
+        const state = await loadState(payload.uuid);
+        const { runId, branchId, newEvidence } = payload;
+        
+        const run = (state.runs || []).find(item => item.id === runId);
+        if (!run) throw new Error('Run not found');
+        
+        const branchIndex = run.branches.findIndex(b => b.id === branchId);
+        if (branchIndex < 0) throw new Error('Branch not found');
+
+        const { resimulateBranch, proposeGenerativeReactions, conductCrossExamination } = await import('../simulith/src/agents/generative.js');
+        const { scoreBranches } = await import('../simulith/src/engine/scoring.js');
+        
+        emit('Resimulation', 'Generating updated branch context...');
+        const updatedBranch = await resimulateBranch(run.scenario, run.branches[branchIndex], newEvidence);
+        const mergedBranch = { ...run.branches[branchIndex], ...updatedBranch };
+
+        const runPersonas = (run.population && run.population.personas) || run.mesh || [];
+        const runEvidence = run.evidence || run.evidenceProfile;
+
+        if (runPersonas.length > 0) {
+          const rawPopulation = [];
+          for (let i = 0; i < runPersonas.length; i++) {
+            const persona = runPersonas[i];
+            emit('Stakeholder Review', `Gathering updated reaction from ${persona.name}...`);
+            const existingReactions = rawPopulation.map(p => {
+              const r = (p.reactions || []).find(rx => rx.branchId === branchId);
+              return {
+                persona: p.name,
+                reactions: r ? [{ branch: mergedBranch.title, stance: r.stance, argument: r.text }] : []
+              };
+            }).filter(item => item.reactions.length > 0);
+
+            const newReactions = await proposeGenerativeReactions(persona, [mergedBranch], run.scenario, null, existingReactions);
+            if (newReactions && newReactions.length > 0) {
+              if (!persona.reactions) persona.reactions = [];
+              const reactionIndex = persona.reactions.findIndex(r => r.branchId === branchId);
+              if (reactionIndex >= 0) {
+                persona.reactions[reactionIndex] = newReactions[0];
+              } else {
+                persona.reactions.push(newReactions[0]);
+              }
+            }
+            
+            const updatedReaction = persona.reactions.find(r => r.branchId === branchId);
+            if (updatedReaction && (updatedReaction.stance === 'wait' || updatedReaction.stance === 'undecided')) {
+               emit('Stakeholder Interview', `Cross-examining ${persona.name} on undecided stance...`);
+               const interviewed = await conductCrossExamination(persona, mergedBranch, run.scenario, updatedReaction);
+               Object.assign(persona, interviewed);
+               updatedReaction.stance = interviewed.stance;
+               updatedReaction.text = interviewed.personaResponse;
+            }
+            rawPopulation.push(persona);
+          }
+        }
+
+        emit('Resimulation', 'Re-scoring branch with updated consensus...');
+        const [scoredBranch] = scoreBranches(
+          [mergedBranch], 
+          run.scenario, 
+          runEvidence, 
+          run.contradictionGraph || { items: [] }, 
+          runPersonas, 
+          run.settings
+        );
+
+        run.branches[branchIndex] = scoredBranch;
+        await saveState(payload.uuid, state);
+        
+        return run;
+      }
+
       let facts = payload.facts || [];
       
       if (payload.uuid && orchestratorConfig.orchestrator) {

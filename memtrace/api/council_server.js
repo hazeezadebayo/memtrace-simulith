@@ -75,73 +75,20 @@ router.post('/runs/:id/branches/:branchId/resimulate', authenticate, async (req,
     const branchIndex = run.branches.findIndex(b => b.id === branchId);
     if (branchIndex < 0) return res.status(404).json({ error: 'Branch not found' });
 
-    const { resimulateBranch, proposeGenerativeReactions } = await import('../simulith/src/agents/generative.js');
-    const { scoreBranches } = await import('../simulith/src/engine/scoring.js');
+    // Enqueue the resimulation job
+    const jobPayload = {
+      type: 'resimulate',
+      runId: runId,
+      branchId: branchId,
+      newEvidence: newEvidence,
+      uuid: req.user.uuid
+    };
     
-    // 1. Resimulate the logic
-    const updatedBranch = await resimulateBranch(run.scenario, run.branches[branchIndex], newEvidence);
-    
-    // Merge back the structural IDs and base properties
-    const mergedBranch = { ...run.branches[branchIndex], ...updatedBranch };
-
-    // Extract the correct personas array (newer Council format uses run.population.personas, older used run.mesh)
-    const runPersonas = (run.population && run.population.personas) || run.mesh || [];
-    const runEvidence = run.evidence || run.evidenceProfile;
-
-    // 2. Re-trigger Stakeholder Deliberation for the new reality
-    if (runPersonas.length > 0) {
-      const { conductCrossExamination } = await import('../simulith/src/agents/generative.js');
-      
-      const rawPopulation = [];
-      for (const persona of runPersonas) {
-        const existingReactions = rawPopulation.map(p => {
-          const r = (p.reactions || []).find(rx => rx.branchId === branchId);
-          return {
-            persona: p.name,
-            reactions: r ? [{ branch: mergedBranch.title, stance: r.stance, argument: r.text }] : []
-          };
-        }).filter(item => item.reactions.length > 0);
-
-        const newReactions = await proposeGenerativeReactions(persona, [mergedBranch], run.scenario, null, existingReactions);
-        if (newReactions && newReactions.length > 0) {
-          if (!persona.reactions) persona.reactions = [];
-          const reactionIndex = persona.reactions.findIndex(r => r.branchId === branchId);
-          if (reactionIndex >= 0) {
-            persona.reactions[reactionIndex] = newReactions[0];
-          } else {
-            persona.reactions.push(newReactions[0]);
-          }
-        }
-        // Re-run cross examination if they return wait
-        const updatedReaction = persona.reactions.find(r => r.branchId === branchId);
-        if (updatedReaction && (updatedReaction.stance === 'wait' || updatedReaction.stance === 'undecided')) {
-           const interviewed = await conductCrossExamination(persona, mergedBranch, run.scenario, updatedReaction);
-           Object.assign(persona, interviewed);
-           updatedReaction.stance = interviewed.stance;
-           updatedReaction.text = interviewed.personaResponse;
-        }
-        rawPopulation.push(persona);
-      }
-    }
-
-    // 3. Re-Score the branch using the updated stakeholder reactions
-    // We pass [mergedBranch] and the full run context to properly calculate confidence and risk
-    const [scoredBranch] = scoreBranches(
-      [mergedBranch], 
-      run.scenario, 
-      runEvidence, 
-      run.contradictionGraph || { items: [] }, 
-      runPersonas, 
-      run.settings
-    );
-
-    run.branches[branchIndex] = scoredBranch;
-    await saveState(req.user.uuid, state);
-    
-    res.json({ ok: true, updatedBranch: scoredBranch });
+    const job = queue.enqueue(jobPayload);
+    res.status(202).json({ jobId: job.id, status: job.status, pollUrl: `/api/v4/jobs/${job.id}` });
   } catch (error) {
     console.error('🚨 RESIMULATE ROUTE ERROR:', error);
-    res.status(500).json({ error: error.message || 'Failed to resimulate branch' });
+    res.status(500).json({ error: error.message || 'Failed to queue resimulate branch' });
   }
 });
 
