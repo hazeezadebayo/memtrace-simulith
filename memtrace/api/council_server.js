@@ -153,7 +153,9 @@ router.post('/runs/:id/branches/:branchId/ingest', authenticate, async (req, res
 
     const run = (state.runs || []).find(item => item.id === runId);
     if (!run) return res.status(404).json({ error: 'Run not found' });
-    
+    if (!run.branches || !Array.isArray(run.branches)) {
+      return res.status(500).json({ error: 'Run has no branches array' });
+    }
     const branchIndex = run.branches.findIndex(b => b.id === branchId);
     if (branchIndex < 0) return res.status(404).json({ error: 'Branch not found' });
 
@@ -167,8 +169,8 @@ Branch ID: ${branch.id}
 Branch Rank: ${branch.rank}
 Confidence: ${branch.confidence}%
 Hypothesis/Title: ${branch.title}
-Reasoning: ${branch.reason}
-Vulnerability/What Would Change My Mind: ${branch.whatWouldChangeMyMind}
+Reasoning: ${branch.reason ?? ''}
+Vulnerability/What Would Change My Mind: ${branch.whatWouldChangeMyMind ?? ''}
 New Evidence/Resimulations: ${branch.evidenceLinks ? branch.evidenceLinks.map(e => e.title).join(', ') : 'None'}`;
       
       const urn = `memtrace:council:knowledge:${branchId}`;
@@ -180,6 +182,7 @@ New Evidence/Resimulations: ${branch.evidenceLinks ? branch.evidenceLinks.map(e 
       return res.status(500).json({ error: 'Orchestrator not available' });
     }
   } catch (error) {
+    console.error('🚨 INGEST ROUTE ERROR:', error);
     res.status(500).json({ error: error.message || 'Failed to ingest branch' });
   }
 });
