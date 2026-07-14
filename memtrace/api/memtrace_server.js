@@ -176,12 +176,12 @@ app.use('/extension', (req, res, next) => {
 
 const JWT_SECRET = loadOrCreateJwtSecret();
 app.use('/simulith', (req, res, next) => {
-    if (req.path === '/workspace.html' || req.path === '/') {
+    if (req.path === '/') return res.sendFile('landing.html', { root: path.join(__dirname, '..', 'simulith', 'public') });
+    if (req.path === '/workspace.html') {
         const token = req.cookies?.auth_token;
         if (!token) return res.redirect('/simulith/login.html');
         try {
             jwt.verify(token, JWT_SECRET);
-            if (req.path === '/') return res.redirect('/simulith/workspace.html');
             next();
         } catch(e) {
             return res.redirect('/simulith/login.html');
