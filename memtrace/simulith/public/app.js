@@ -1009,7 +1009,7 @@ async function rerender(result) {
     const popTarget = document.getElementById('population-viz');
     if (popTarget) popTarget.innerHTML = renderPopulationSvg(result.population.personas, result.recommendation?.branchId);
   } catch (e) { console.error(e); }
-  document.querySelectorAll('[data-record-outcome]').forEach(btn => {
+  results.querySelectorAll('[data-record-outcome]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.recordOutcome;
       logConsole(`RECORDING OUTCOME FOR BRANCH: ${id}`, 'system');
@@ -1037,7 +1037,7 @@ async function rerender(result) {
     });
   });
 
-  document.querySelectorAll('[data-resimulate-branch]').forEach(btn => {
+  results.querySelectorAll('[data-resimulate-branch]').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (currentMode !== 'council') {
         console.warn("Re-simulate is only allowed in Council mode.");
@@ -1078,7 +1078,7 @@ async function rerender(result) {
         // Surgical patch: only replace the one branch card that changed.
         // Do NOT call rerender() — it would try to re-paint the full result
         // using the persisted run shape which lacks counterfactuals/population.
-        const existingCard = document.querySelector(`[data-branch-id="${branchId}"]`);
+        const existingCard = results.querySelector(`[data-branch-id="${branchId}"]`);
         if (existingCard) {
           // Create a temporary container to parse the new HTML string
           const tmp = document.createElement('div');
@@ -1119,7 +1119,7 @@ async function rerender(result) {
                   throw new Error(errText);
                 }
                 const d2 = await r2.json();
-                const card2 = document.querySelector(`[data-branch-id="${newBranchId}"]`);
+                const card2 = results.querySelector(`[data-branch-id="${newBranchId}"]`);
                 if (card2) { const t2 = document.createElement('div'); t2.innerHTML = renderBranch(d2.updatedBranch); card2.replaceWith(t2.firstElementChild); }
                 logConsole(`BRANCH ${newBranchId} RESIMULATED.`, 'system');
               } catch (e2) {
@@ -1989,7 +1989,7 @@ async function runRouterScenario() {
       const popTarget = document.getElementById('population-viz');
       if (popTarget) popTarget.innerHTML = renderPopulationSvg(simResult.population.personas, simResult.recommendation?.branchId);
     } catch (e) { console.error(e); }
-    document.querySelectorAll('[data-record-outcome]').forEach(btn => {
+  results.querySelectorAll('[data-record-outcome]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.recordOutcome;
         logConsole(`RECORDING OUTCOME FOR BRANCH: ${id}`, 'system');
@@ -2017,7 +2017,7 @@ async function runRouterScenario() {
       });
     });
 
-    document.querySelectorAll('[data-resimulate-branch]').forEach(btn => {
+    results.querySelectorAll('[data-resimulate-branch]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (currentMode !== 'council') {
           console.warn("Re-simulate is only allowed in Council mode.");
