@@ -194,14 +194,19 @@ export async function recordOutcome(state, run, outcome) {
     });
   }
 
-  updated.runs.push({
-    id: run?.id || randomUUID(),
-    domain,
-    question: run?.scenario?.question || outcome?.question || '',
-    branchId,
-    outcome,
-    recordedAt: new Date().toISOString()
-  });
+  const existingRun = updated.runs.find(r => r.id === run?.id);
+  if (existingRun) {
+    Object.assign(existingRun, { branchId, outcome, recordedAt: new Date().toISOString() });
+  } else {
+    updated.runs.push({
+      id: run?.id || randomUUID(),
+      domain,
+      question: run?.scenario?.question || outcome?.question || '',
+      branchId,
+      outcome,
+      recordedAt: new Date().toISOString()
+    });
+  }
 
   const { objectiveRecluster } = await import('../agents/recluster.js');
   updated.personas = objectiveRecluster(updated.personas, updated.outcomeStats);
