@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node api/memtrace_server.js",
     "test": "bash test/run_tests_v2.sh",
-    "build:popup": "esbuild extension/popup.js --bundle --outfile=extension/popup.bundle.js --format=esm --platform=browser --external:@xenova/transformers --external:fs --external:path --external:node:async_hooks"
+    "build:popup": "esbuild extension/popup.js --bundle --outfile=extension/popup.bundle.js --format=esm --platform=browser --external:@xenova/transformers --external:fs --external:path --external:node:async_hooks --external:@libsql/client"
   },
   "dependencies": {
     "@libsql/client": "^0.17.3",
