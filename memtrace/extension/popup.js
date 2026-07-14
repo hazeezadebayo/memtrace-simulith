@@ -137,23 +137,6 @@ let deviceUUID = null;
 let currentThread = null;
 
 async function init() {
-    // ---
-    // Environment configured by Orchestrator init
-    // ---
-
-    deviceUUID = await getDeviceUUID();
-
-    // Initialize via Singleton Orchestrator in ONLINE mode to sync with the Web App Backend
-    const orch = await getOrchestrator();
-    try {
-        const apiBase = typeof window.API_BASE !== 'undefined' ? window.API_BASE : '';
-        await orch.init(deviceUUID, 'online', { online_db_provider: 'turso', apiBaseUrl: apiBase });
-    } catch (e) {
-        console.warn('[Popup] Storage init failed (UI remains functional):', e);
-    }
-
-    await loadCurrentThread();
-
     // === DOM CACHE (safe after DOMContentLoaded) ===
     searchResultsList = document.getElementById('search-results-list');
     searchSummaryPanel = document.getElementById('search-summary-panel');
@@ -167,15 +150,37 @@ async function init() {
         files: document.getElementById('btn-files')
     };
 
-    tabButtons.summarizer.onclick = () => showTab('summarizer');
-    tabButtons.search.onclick = () => showTab('search');
-    tabButtons.files.onclick = () => showTab('files');
+    if (tabButtons.summarizer) tabButtons.summarizer.onclick = () => showTab('summarizer');
+    if (tabButtons.search) tabButtons.search.onclick = () => showTab('search');
+    if (tabButtons.files) tabButtons.files.onclick = () => showTab('files');
 
-    document.getElementById('btn-ingest-text').onclick = startManualIngestion;
-    document.getElementById('btn-search-query').onclick = performSearch;
+    const btnIngest = document.getElementById('btn-ingest-text');
+    if (btnIngest) btnIngest.onclick = startManualIngestion;
+    const btnSearch = document.getElementById('btn-search-query');
+    if (btnSearch) btnSearch.onclick = performSearch;
 
     initDarkMode();
     showTab('summarizer');
+
+    // ---
+    // Environment configured by Orchestrator init
+    // ---
+    try {
+        deviceUUID = await getDeviceUUID();
+
+        // Initialize via Singleton Orchestrator in ONLINE mode to sync with the Web App Backend
+        const orch = await getOrchestrator();
+        try {
+            const apiBase = typeof window.API_BASE !== 'undefined' ? window.API_BASE : '';
+            await orch.init(deviceUUID, 'online', { online_db_provider: 'turso', apiBaseUrl: apiBase });
+        } catch (e) {
+            console.warn('[Popup] Storage init failed (UI remains functional):', e);
+        }
+
+        await loadCurrentThread();
+    } catch (e) {
+        console.error('[Popup] Critical error during initialization:', e);
+    }
 }
 
 async function loadCurrentThread() {
