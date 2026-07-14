@@ -65,7 +65,7 @@ router.post('/runs/:id/branches/:branchId/resimulate', authenticate, async (req,
     const state = await loadState(req.user.uuid);
     const runId = req.params.id;
     const branchId = req.params.branchId;
-    const newEvidence = req.body.newEvidence || req.body.counterArgument;
+    const newEvidence = req.body.newEvidence;
     
     if (!newEvidence) return res.status(400).json({ error: 'newEvidence is required' });
 
