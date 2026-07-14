@@ -114,7 +114,7 @@ app.use('/extension', (req, res, next) => {
     if (ALLOWED_EXTENSION.has(req.path)) return next();
     if (req.path.endsWith(WASM_SUFFIX)) return next();
     res.status(403).type('text').send('Forbidden');
-}, express.static(extensionDir));
+}, express.static(extensionDir, { maxAge: '1h', etag: true }));
 
 const JWT_SECRET = loadOrCreateJwtSecret();
 app.use('/simulith', (req, res, next) => {
