@@ -1021,13 +1021,14 @@ async function rerender(result) {
       logConsole(`INGESTING BRANCH KNOWLEDGE INTO MEMTRACE...`, 'system');
       try {
         const ingestRes = await fetch(`/api/v4/runs/${result.id}/branches/${id}/ingest`, { method: 'POST' });
-        if (ingestRes.ok) {
-          logConsole(`SUCCESS: Branch ${id} saved to Knowledge Graph.`, 'system');
-          btn.style.background = '#4CAF50';
-          btn.style.color = 'white';
-        } else {
-          logConsole(`FAILED: Branch ingest failed.`, 'error');
-        }
+          if (ingestRes.ok) {
+            logConsole(`SUCCESS: Branch ${id} saved to Knowledge Graph.`, 'system');
+            btn.style.background = '#4CAF50';
+            btn.style.color = 'white';
+          } else {
+            const ingestErr = await ingestRes.json().catch(() => ({ error: 'unknown' }));
+            logConsole(`FAILED: Branch ingest failed — ${ingestErr.error}`, 'error');
+          }
       } catch (err) {
         logConsole(`INGEST ERROR: ${err.message}`, 'error');
       }
@@ -2005,7 +2006,8 @@ async function runRouterScenario() {
             btn.style.background = '#4CAF50';
             btn.style.color = 'white';
           } else {
-            logConsole(`FAILED: Branch ingest failed.`, 'error');
+            const ingestErr = await ingestRes.json().catch(() => ({ error: 'unknown' }));
+            logConsole(`FAILED: Branch ingest failed — ${ingestErr.error}`, 'error');
           }
         } catch (err) {
           logConsole(`INGEST ERROR: ${err.message}`, 'error');
