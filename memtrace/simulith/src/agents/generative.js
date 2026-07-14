@@ -209,61 +209,60 @@ export async function proposeGenerativePersonas(scenario, evidence, existingPers
     emit('generative', `Injected ${toInject.length} user-created custom personas into the pool.`);
   }
 
-  let retries = count * 2;
-  while (personas.length < count && retries > 0) {
-    retries--;
-    const allExisting = [...(existingPersonas || []), ...personas];
-    const existingDesc = allExisting.map(p => `- ${p.name || 'Unknown'} (${p.expertise || p.note || 'General'}, reasoning style: ${p.reasoningStyle || p.cluster || 'Neutral'})`).join('\n');
-    const avoidStr = allExisting.length > 0
-      ? `Ensure this persona is completely distinct in profile, expertise, occupation, and reasoning style from the existing personas:\n${existingDesc}\nDO NOT duplicate their backgrounds or roles.`
-      : '';
+  const allExisting = [...(existingPersonas || []), ...personas];
+  const existingDesc = allExisting.map(p => `- ${p.name || 'Unknown'} (${p.expertise || p.note || 'General'}, reasoning style: ${p.reasoningStyle || p.cluster || 'Neutral'})`).join('\n');
+  const avoidStr = allExisting.length > 0
+    ? `Ensure these personas are completely distinct in profile, expertise, occupation, and reasoning style from the existing personas:\n${existingDesc}\nDO NOT duplicate their backgrounds or roles.`
+    : '';
 
+  const neededCount = count - personas.length;
+  if (neededCount > 0) {
     const prompt = `
       Given the following scenario: ${scenario.question}
       Facts: ${scenario.facts.join(', ')}
       
-      We are generating ${count} highly distinct "Personas" that represent key stakeholders or opposing viewpoints for this SPECIFIC problem.
-      Generate persona #${personas.length + 1} of ${count}.
+      Generate exactly ${neededCount} highly distinct "Personas" that represent key stakeholders or opposing viewpoints for this SPECIFIC problem.
       ${avoidStr}
       
-      Requirements for this persona:
-      1. Make them a highly realistic human with specific location, race, gender, age, expertise, and a 1-sentence bio.
-      2. They MUST possess a unique reasoning perspective and specialized knowledge.
-      3. Do NOT include any extra properties not defined in the JSON schema below (such as personaDescription).
+      Requirements for these personas:
+      1. Make them highly realistic humans with specific location, race, gender, age, expertise, and a 1-sentence bio.
+      2. They MUST possess unique reasoning perspectives and specialized knowledge.
+      3. CRITICAL DATA INTEGRITY: Do NOT use unescaped double quotes inside your string values. Use single quotes for nicknames or internal quotes (e.g., "Rajesh 'Raj' Kapoor").
       
-      Return a single JSON object matching this schema exactly. Choose exactly one value where choices are provided:
-      {
-        "name": "Full Name",
-        "age": 42,
-        "gender": "Male or Female",
-        "race": "...",
-        "location": "City, Country",
-        "expertise": "Field of expertise",
-        "reasoningStyle": "data-driven", // Choose one: data-driven, intuitive, systemic, contrarian, historical, ethical, financial, operational
-        "bio": "A deep, 2-3 sentence psychological and professional backstory explaining their formative experiences, core motivations, and specific posture regarding this domain.",
-        "riskToleranceProfile": "moderate", // Choose one: very high, high, moderate, low, very low
-        "evidenceRequirementProfile": "high", // Choose one: very high, high, moderate, low, very low
-        "noveltySeekingProfile": "moderate", // Choose one: very high, high, moderate, low, very low
-        "clarityNeedProfile": "high" // Choose one: very high, high, moderate, low, very low
-      }
+      Return a JSON ARRAY of exactly ${neededCount} objects matching this schema exactly:
+      [
+        {
+          "name": "Full Name",
+          "age": 42,
+          "gender": "Male or Female",
+          "race": "...",
+          "location": "City, Country",
+          "expertise": "Field of expertise",
+          "reasoningStyle": "data-driven", // Choose one: data-driven, intuitive, systemic, contrarian, historical, ethical, financial, operational
+          "bio": "A deep, 2-3 sentence psychological and professional backstory explaining their formative experiences, core motivations, and specific posture regarding this domain.",
+          "riskToleranceProfile": "moderate", // Choose one: very high, high, moderate, low, very low
+          "evidenceRequirementProfile": "high", // Choose one: very high, high, moderate, low, very low
+          "noveltySeekingProfile": "moderate", // Choose one: very high, high, moderate, low, very low
+          "clarityNeedProfile": "high" // Choose one: very high, high, moderate, low, very low
+        }
+      ]
     `;
 
     const result = await callLLM(prompt, 0.85);
-    if (!result) {
-      emit('llm_error', `Persona generation failed (LLM returned empty response). Retrying...`);
-      continue;
-    }
-
-    emit('llm_raw_persona', `Persona #${personas.length + 1} LLM Output:\n${result.substring(0, 150)}...`);
-    const parsed = parseJson(result);
-    if (parsed) {
-      if (Array.isArray(parsed)) {
-        personas.push(...parsed);
+    if (result) {
+      emit('llm_raw_persona', `Persona Generation LLM Output:\n${result.substring(0, 150)}...`);
+      const parsed = parseJson(result);
+      if (parsed) {
+        if (Array.isArray(parsed)) {
+          personas.push(...parsed);
+        } else {
+          personas.push(parsed);
+        }
       } else {
-        personas.push(parsed);
+        emit('llm_error', `Persona JSON parse failed due to malformed LLM output.`);
       }
     } else {
-      emit('llm_error', `Persona JSON parse failed. Retrying...`);
+      emit('llm_error', `Persona generation failed (LLM returned empty response).`);
     }
   }
 
