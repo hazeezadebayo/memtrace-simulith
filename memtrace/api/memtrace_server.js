@@ -40,7 +40,7 @@ app.disable('x-powered-by');
 
 app.use((req, res, next) => {
     res.setHeader('Content-Security-Policy',
-        "default-src 'self'; script-src 'self' https://accounts.google.com https://static.cloudflareinsights.com 'sha256-9BsbNuO7krRne1dsG+Ry3F9udkwJ8eW6+7HigWKcaN0=' 'sha256-IuGsjRApwdv/8kgOEGH6GZMAkItUlOjFydrGDid5xB0='; style-src 'self' 'unsafe-inline' https://rsms.me https://fonts.googleapis.com; font-src 'self' https://rsms.me https://fonts.gstatic.com; img-src 'self' data:; frame-src 'self' https://accounts.google.com; connect-src 'self'"
+        "default-src 'self'; script-src 'self' https://accounts.google.com https://static.cloudflareinsights.com 'sha256-9BsbNuO7krRne1dsG+Ry3F9udkwJ8eW6+7HigWKcaN0=' 'sha256-IuGsjRApwdv/8kgOEGH6GZMAkItUlOjFydrGDid5xB0='; style-src 'self' 'unsafe-inline' https://rsms.me https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://rsms.me https://fonts.gstatic.com; img-src 'self' data:; frame-src 'self' https://accounts.google.com; connect-src 'self' https://accounts.google.com"
     );
     next();
 });
