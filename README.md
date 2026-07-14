@@ -1,395 +1,387 @@
-# 🛸 MemTrace & MiroFish Social Simulation Platform
+# 🧠 Simulith / MemTrace — Multi-Agent Simulation Platform
 
-MemTrace is a local-first, privacy-first context extraction, vector index, and graph serialization system. It allows developers to capture active chat history pages or unstructured briefs, chunk them semantic-sensitively, generate local ONNX vector embeddings, and project them into an inspectable Knowledge Graph.
-
-On top of this memory platform, MemTrace layers a multi-agent simulation framework (**MiroFish & Pivot**) to simulate narrative evolution, brand reactions, policy impacts, and financial case studies.
+**Powered by Qwen Cloud — Built for the Global AI Hackathon Series**
 
 ---
 
-## 1. File Modules & Tldr Information
+## TL;DR
 
-| File Path                                      | Description / Responsibility                                                                                                                                                                  |
-| :--------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`api/server.js`**                    | Boots the primary Express server on port `3005`, mounting core middleware (origin checking, authentication) and exposing `/v1/ingest` and `/v1/search`.                                 |
-| **`api/pivot_router.js`**              | Exposes router endpoints for Pivot and Swarm simulations, including `/api/v4/simulate/swarm`, job query/cancellation routing, and ReporterAgent interview interactions.                     |
-| **`pivot_v4/src/swarm.js`**            | Orchestrates Swarm agent creation. Enforces the strict**1:9 ratio** of general pseudo-archetypes to domain-specific personas, utilizing Pop shuffling to prevent duplicate allocations. |
-| **`pivot_v4/src/manifest.js`**         | Serves as the domain and archetype registry. Classifies scenarios into domains (e.g.`TECH`, `FINANCE`) and contains the canonical registry of specialized stakeholder backstories.        |
-| **`pivot_v4/src/simulator.js`**        | Orchestrates the Pivot simulation framework, evaluating decision branches (Aggressive, Defensive, Lateral) against stakeholder stances.                                                       |
-| **`pivot_v4/src/mirofish_engine.js`**  | Drives Swarm simulation execution. Manages the job queue lifecycle, loads domain profiles, and delegates round-by-round processing.                                                           |
-| **`pivot_v4/src/tick_engine.js`**      | Manages the round loop iteration. Applies geopolitical/market shocks, triggers post-generation, and evaluates zero-shot action likelihoods.                                                   |
-| **`pivot_v4/src/belief_state.js`**     | Computes agent belief vector drifts and stance updates based on reply sentiment and historical trust decay.                                                                                   |
-| **`pivot_v4/src/scoring.js`**          | Calculates quantitative confidence metrics, faction stance convergence, and alignment indices.                                                                                                |
-| **`pivot_v4/src/report_generator.js`** | Compiles the final simulation Markdown report summarizing risks, key actors, round logs, and confidence readouts.                                                                             |
-| **`extension/content.js`**             | Chrome Content Script. Scrapes the active tab's chat logs or article text and sends the raw text payload to the extension background script.                                                  |
-| **`extension/background.js`**          | Chrome Background Script. Manages runtime state, communicates with `popup.js`, and relays scraped data to the local Express API server.                                                     |
-| **`extension/popup.js`**               | Chrome Extension Popup. Provides the user interface displaying ingestion progress and simulation controls.                                                                                    |
-| **`local_llm_server.ipynb`**           | FastAPI server running HuggingFace transformers (`unsloth/Qwen3-0.6B`) locally to perform offline generation.                                                                               |
+Simulith is a multi-agent simulation engine that lets you **stress-test decisions before they meet reality**. Feed it a policy draft, launch brief, crisis memo, or video — it spawns autonomous AI agents (personas, stakeholders, commentators) who deliberate, react, factionalize, and drift across configurable simulation rounds. Three modes — **Council** (structured deliberation), **Mesh** (social belief dynamics), **Tree** (causal consequence search) — each reveal different failure modes. An **Orchestrator** layer (Router / Divergence) auto-selects or runs all three simultaneously and surfaces where they disagree. Underneath is a persistent **memory substrate** (ingestion → chunking → embedding → knowledge graph) that makes every simulation outcome searchable context for future queries. Built on Qwen Cloud LLM + Embedding APIs, deployed on Alibaba Cloud SAS.
+
+**Live at**: [simulith.hazeezadebayo.dev](https://simulith.hazeezadebayo.dev)
 
 ---
 
-## 2. High-Level Architectural Flow
+## The Pitch
+
+### Decisions have consequences. Most teams discover them too late.
+
+Every high-stakes decision — a product launch, a policy change, a crisis response — creates a wave of reactions across stakeholders, markets, and commentators. Most teams rely on intuition, focus groups, or a single LLM call that collapses ambiguity into one confident answer.
+
+**Simulith treats uncertainty as the output.**
+
+Instead of one answer, you get a **simulation report** showing:
+- **Council**: A panel of generated persona agents debates your decision across strategic branches (Aggressive, Defensive, Lateral) and returns a mathematical confidence index for each path.
+- **Mesh**: Up to 30 autonomous agents form factions, react to shocks, drift in beliefs, and defect — showing how narratives evolve across social landscapes.
+- **Tree**: An MCTS-inspired engine maps every decision into a branching tree of causally linked outcomes, scored by deterministic physics and stochastic variance.
+
+A **Router** auto-selects the best-fit mode. **Divergence** runs all three and highlights where they conflict — because disagreement *is* the signal.
+
+### Why Qwen Cloud?
+
+Every LLM call — summarization, embedding, tag generation, agent reasoning, belief drift computation — runs through **Qwen Cloud APIs** (`qwen3.7-plus`, `qwen-embedding`). The system is designed to be Qwen-native: if the API key is present, the full simulation stack activates. No external LLM dependencies.
+
+---
+
+## Hackathon Fit
+
+### Tracks Entered
+
+| Track | Coverage |
+|-------|----------|
+| **MemoryAgent** | Persistent, structured memory substrate: chunking → embedding (Qwen) → knowledge graph → cross-session recall. Every simulation outcome is ingested back for future queries. |
+| **Agent Society** | Three multi-agent architectures (Council, Mesh, Tree) with autonomous agents that deliberate, factionalize, compete, and drift. Router/Divergence orchestrator coordinates across modes. |
+| **Autopilot Agent** | Router auto-selects simulation mode from user intent. Divergence runs all three autonomously. End-to-end pipeline from ingestion to report with zero manual routing. |
+
+### Submission Checklist
+
+| Requirement | Status |
+|-------------|--------|
+| Public GitHub repository with open-source license | ✅ MIT License |
+| Architecture diagram (Mermaid flowchart) | ✅ See Section 2 |
+| Written summary of features & functionality | ✅ This document |
+| Proof of Alibaba Cloud Deployment | ✅ Deployed on Alibaba SAS (Singapore), Cloudflare Tunnel |
+| 1–3 minute demo video | ✅ Submitted |
+| Open-source frameworks OK; no direct repo cloning | ✅ Built from scratch |
+
+---
+
+## What We Built
+
+### Memory Substrate (`extension/core/`, `extension/db/`)
+
+Files: `memory.js`, `chunker.js`, `orchestrator.js`, `sqlite-adapter.js`, `postgres-adapter.js`, `remote-adapter.js`, `alibaba_cloud_rds_adapter.js`
+
+- **Ingestion pipeline**: Raw text → semantic chunking → Qwen embedding → vector storage → knowledge graph edges
+- **Multi-backend**: SQLite (local WASM), LibSQL (Turso), PostgreSQL, Alibaba Cloud ApsaraDB (RDS)
+- **Cross-session memory**: Every simulation outcome is ingested back, building a living library of tested assumptions
+
+### Simulation Modes (`simulith/src/`)
+
+| Mode | File(s) | Description |
+|------|---------|-------------|
+| **Council** | `agents/interview.js`, `agents/generative.js`, `engine/scoring.js`, `engine/simulator.js` | Stakeholder panel deliberation with strategic branching and confidence scoring |
+| **Mesh** | `agents/mesh.js`, `agents/belief_state.js`, `data/shocks.js`, `engine/tick_engine.js` | Multi-agent social simulation with faction formation, belief drift, and defection |
+| **Tree** | `tree/tree_builder.js`, `tree/transition_engine.js`, `tree/probability_engine.js`, `tree/utility_scorer.js`, `tree/perturbation_engine.js` | MCTS-inspired consequence state-space search with deterministic physics scoring |
+
+### Orchestration Layer (`api/automation_router.js`, `simulith/src/automation/`)
+
+- **Router**: LLM analyzes user intent and auto-dispatches to optimal simulation mode
+- **Divergence**: Runs all three modes simultaneously on the same question and compares outputs
+- **Synthesis**: Cross-mode confidence scoring with disagreement highlighting
+
+### API & Auth (`api/`)
+
+Files: `memtrace_server.js`, `auth_server.js`, `auth_secret.js`, `council_server.js`, `mesh_server.js`, `tree_server.js`, `simulith_server.js`, `persona_server.js`, `telemetry_server.js`, `core_memory_server.js`, `db_users.js`
+
+- **Google OAuth 2.0** login with JWT session management (HttpOnly cookies)
+- **Rate-limited LLM proxy endpoints** (`/api/llm/summarize`, `/tags`, `/embed`, `/generate-answer`) — API keys stay server-side
+- **User token accounting** with rate limiting and injection guardrails
+- **Admin endpoints** for user management, token requests, and system stats
+
+### Chrome Extension (`extension/`)
+
+Files: `popup.js`, `content.js`, `background.js`, `popup.html`, `manifest.json`
+
+- Captures active tab content (chat logs, articles, documents)
+- Communicates with the Express API for ingestion and simulation
+- Bundled via esbuild with WASM SQLite for offline-capable operation
+
+### Qwen Cloud Integration (`extension/llm/`)
+
+Files: `qwen_llm_api_adapter.js`, `qwen_embedding_api_adapter.js`, `llm_agent.js`, `agent.js`, `embedding.js`
+
+- **Chat completion**: `qwen3.7-plus` / `qwen3.7-max` for agent reasoning, summarization, tag generation
+- **Embeddings**: Qwen Embedding API for vector generation
+- **Fallback chain**: Qwen → OpenAI → Gemini, configured per-provider
+- **Rate limiting**: Token bucket + sliding window IP limiter (10 req/min per IP for LLM endpoints)
+- **Server-side proxy**: API keys never exposed to the browser
+
+---
+
+## Judging Criteria Assessment
+
+### Innovation & AI Creativity (30%)
+
+> *Architecture quality, modularity, scalability, error handling, clean code, non-trivial logic, sophisticated tech stack*
+
+- **Three independent simulation modes** (Council / Mesh / Tree) with a shared orchestrator — each mode is a novel approach to multi-agent reasoning
+- **Router + Divergence pattern**: Rather than committing to one simulation strategy, the system either auto-selects or runs all three simultaneously and surfaces disagreement
+- **Memory substrate as first-class citizen**: Not just a chatbot with RAG — every simulation outcome is ingested into a persistent knowledge graph, making past forecasts context for future queries
+- **Sophisticated tech stack**: Express + SQLite/LibSQL/Postgres multi-backend + Qwen Cloud APIs + esbuild bundling + Docker deployment + Alibaba Cloud + Cloudflare Tunnel
+
+### Technical Depth & Engineering (30%)
+
+> *Sophisticated use of QwenCloud APIs, algorithmic/engineering innovation, custom components, performance optimization*
+
+- **Qwen-native architecture**: Every LLM call uses Qwen Cloud APIs (`qwen3.7-plus`, `qwen-embedding`). The `qwen_llm_api_adapter.js` and `qwen_embedding_api_adapter.js` provide dedicated Qwen integration with proper error handling and retry logic
+- **Custom simulation engines**: Tree mode implements MCTS-inspired state-space search with deterministic physics (elasticity, coupling, shocks) and stochastic variance — not a wrapper around an existing library
+- **Server-side LLM proxy**: All API keys stay on the server. The extension's popup communicates through authenticated, rate-limited proxy endpoints (`/api/llm/*`) — meaning Qwen API keys are never exposed to client-side JavaScript
+- **Multi-tier rate limiting**: Token bucket per-user + sliding window per-IP (10 req/min) + global 500 req/min — costing is controlled at three independent levels
+- **Performance optimizations**: 1.5MB esbuild bundle with WASM SQLite, 1h CDN cache with cache-busting `?v=N`, 700MB container memory limit with swap support
+
+### Problem Value & Impact (25%)
+
+> *Real-world relevance, scalability potential for productization or community adoption*
+
+- **Real pain point**: Teams routinely make high-stakes decisions without simulating how stakeholders, markets, and commentators will react. Simulith provides a systematic, repeatable process for surfacing failure modes before they materialize
+- **Industry-agnostic**: Equally applicable to product launches, policy analysis, crisis comms, narrative forecasting, and strategic planning
+- **Scalable architecture**: Multi-backend storage (SQLite → Postgres → RDS), Docker containerization, Cloudflare CDN, Alibaba Cloud SAS — designed for production from day one
+- **Open-source MIT license**: Community can self-host, extend, and integrate
+
+### Presentation & Documentation (15%)
+
+> *Clear technical demo, visualized key logic, architecture docs*
+
+- ✅ Architecture diagram (Mermaid flowchart — see Section 2)
+- ✅ Deployed live instance at [simulith.hazeezadebayo.dev](https://simulith.hazeezadebayo.dev)
+- ✅ Video demo submitted
+- ✅ This document
+
+---
+
+## Architecture
 
 ```mermaid
 flowchart TD
-    subgraph client_layer ["Client Layer (Chrome Extension)"]
-        A["Tab Scraper / Content Ingestion"] -->|Capture DOM / Scrape Chat| B["content.js"]
+    subgraph client_layer ["Client Layer"]
+        A["Chrome Extension / Popup (popup.js)"] -->|Capture DOM| B["content.js"]
         B -->|Message Passing| C["background.js"]
-        C -->|HTTP API Call| D["Express API Server"]
+        C -->|HTTP /api/llm/*| D["Express API Server"]
+        E["Browser / Landing Page"] -->|HTTP| D
     end
 
-    subgraph api_layer ["API & Orchestration Layer"]
-        D -->|Route: /v1/ingest| E["orchestrator.js"]
-        E -->|Text Splitting| F["chunker.js"]
-        E -->|Local Embedding Generation| G["llm_agent.js / Xenova WASM"]
-        E -->|Store Chunks & Edges| H[("SQLite / Postgres DB")]
-  
-        D -->|Route: /api/v4/simulate/mirofish| I["mirofish_engine.js"]
-        I -->|Task Queue| J{"Job Queue"}
+    subgraph api_layer ["API Layer (api/)"]
+        D -->|Route: /v1/ingest| F["Memory Pipeline"]
+        D -->|Route: /v1/search| F
+        D -->|Route: /api/v4/simulate/*| G["Simulation Orchestrator"]
+        D -->|Route: /api/llm/*| H["LLM Proxy (rate-limited)"]
+        D -->|Route: /api/auth/*| I["Auth (Google OAuth + JWT)"]
+        D -->|Route: /api/v4/automation/*| J["Router / Divergence"]
     end
 
-    subgraph sim_layer ["Simulation Layer (MiroFish / Swarm)"]
-        J -->|Classify Domain| K["domain_matcher.js"]
-        J -->|Generate Swarm 1:9 Ratio| L["mirofish_swarm.js"]
-        J -->|Execute Round Loop| M["tick_engine.js"]
-  
-        M -->|Round 1| N["Create Initial Posts"]
-        M -->|Round >= 2| O["Apply Geopolitical/Market Shocks"]
-        M -->|Interaction| P["Zero-Shot Action Likelihood Classifier"]
-        P -->|Comment Chosen| Q["Generate Reply & Evaluate Sentiment"]
-        Q -->|Nudge Beliefs| R["belief_state.js"]
-        R -->|Drift Assessment| S["Dynamic Faction Tipping"]
-  
-        M -->|Completed Rounds| T["interview.js / ReporterAgent Q&A"]
-        T -->|Compile Report| U["report_generator.js"]
-        U -->|Feedback Loop| V["Asynchronously Ingest Simulation Outcomes back to DB"]
+    subgraph memory_layer ["Memory Substrate (extension/core/ + extension/db/)"]
+        F -->|Text Splitting| K["chunker.js"]
+        F -->|Qwen Embedding| L["qwen_embedding_api_adapter.js"]
+        F -->|Store Vectors| M[("SQLite / LibSQL / Postgres / RDS")]
+        F -->|Knowledge Graph| N["simulith/src/graph/knowledge_graph.js"]
     end
+
+    subgraph sim_layer ["Simulation Engines (simulith/src/)"]
+        G -->|Council Mode| O["agents/interview.js + engine/simulator.js"]
+        G -->|Mesh Mode| P["agents/mesh.js + engine/tick_engine.js"]
+        G -->|Tree Mode| Q["tree/tree_builder.js + tree/probability_engine.js"]
+        
+        O -->|Qwen Chat| R["qwen_llm_api_adapter.js"]
+        P -->|Qwen Chat| R
+        Q -->|Qwen Chat| R
+        R -->|dashscope-intl.aliyuncs.com| S[("Qwen Cloud API")]
+        
+        O -->|Score & Report| T["engine/scoring.js + engine/report_generator.js"]
+        P -->|Belief Drift| U["agents/belief_state.js"]
+        Q -->|Utility Scoring| V["tree/utility_scorer.js"]
+    end
+
+    subgraph automation_layer ["Orchestration (simulith/src/automation/)"]
+        J -->|Router: Auto-select mode| W["epistemology_router.js"]
+        J -->|Divergence: Run all modes| X["divergence_engine.js"]
+        W -->|Dispatch| G
+        X -->|Compare outputs| Y["Cross-mode synthesis"]
+    end
+
+    M -->|Simulation outcomes ingested back| M
+```
+
+### Request Flow
+
+```mermaid
+sequenceDiagram
+    participant User as User/Browser
+    participant API as Express API
+    participant Auth as Auth Middleware
+    participant LLM as LLM Proxy
+    participant Qwen as Qwen Cloud API
+    participant Sim as Simulation Engine
+    participant DB as Database
+
+    User->>API: POST /api/auth/google (ID token)
+    API->>Auth: verify Google token
+    Auth->>API: JWT cookie set
+    API->>User: 200 { uuid, email }
+
+    User->>API: POST /v1/ingest { text, reference }
+    API->>LLM: embed text
+    LLM->>Qwen: POST /compatible-mode/v1/embeddings
+    Qwen->>LLM: embedding vector
+    LLM->>API: return embedding
+    API->>DB: store chunk + embedding + edges
+    API->>User: 200 { chunks_ingested, edges_created }
+
+    User->>API: POST /api/v4/simulate/council { scenario, rounds }
+    API->>Auth: verify JWT
+    Auth->>API: req.user.uuid
+    API->>Sim: spawn agents, run rounds
+    Sim->>LLM: generate agent reasoning
+    LLM->>Qwen: POST /compatible-mode/v1/chat/completions
+    Qwen->>LLM: agent response
+    Sim->>DB: store round outcomes
+    API->>User: 200 { jobId, status }
+
+    User->>API: GET /api/v4/jobs/:id
+    API->>DB: query job status
+    API->>User: 200 { report, confidenceIndex, roundsCompleted }
 ```
 
 ---
 
-## 3. Project Overview & Core Mechanics
+## Quick Start
 
-MemTrace acts as a **persistent context substrate**. It converts temporary chat details into permanently cached embeddings and graph nodes, ensuring historical workspace threads remain queryable across new LLM contexts.
+### Prerequisites
 
-### How Swarm Simulation Works:
+- Node.js 20+
+- Docker & Docker Compose (for production deployment)
+- Qwen Cloud API key (sign up at [qwencloud.com](https://qwencloud.com))
 
-1. **Ingestion & Graph Projection**: Scraped context is projected into an ontology graph containing faction nodes.
-2. **Dynamic Swarm Allocation**: The system dynamically matched the context topic to a domain (e.g. `TECH`) and generates a population of agents following a strict **1:9 ratio** (90% domain-specific personas, 10% general critical personas like *The Builder* or *The Skeptic*) to avoid echo-chamber behavior.
-3. **Stochastic Round Tick**: The engine runs 3 simulation rounds:
-   - *Round 1*: Agents write initial posts showing their default faction stances.
-   - *Round 2*: External shocks (e.g., policy updates, market spikes) are applied. Agents react.
-   - *Round >=3*: Pairwise social interactions (likes, comments, follows) run. Edges and beliefs shift based on zero-shot action probabilities and reply sentiment.
-4. **Defection**: Agents whose stances drift too far from their bound faction defect dynamically.
-5. **ReporterAgent Interviews**: Users can chat directly with individual agents post-simulation to inspect their rationales.
-6. **Grounding**: The final simulation report is ingested back into MemTrace, making the outcome searchable in future sessions.
+### Local Development
+
+```bash
+# Install dependencies
+cd memtrace && npm install
+
+# Set environment variables
+export API_KEY="sk-your-qwen-api-key"
+export GOOGLE_CLIENT_ID="your-google-client-id"  # optional for local dev
+export JWT_SECRET="your-256-bit-secret"           # optional, auto-generated
+
+# Build popup bundle (optional, for Chrome extension)
+npm run build:popup
+
+# Start server
+npm run dev
+```
+
+Server boots at `http://localhost:3106`.
+
+### Docker Deployment
+
+```bash
+# Build production image
+docker build -f docker/Dockerfile.prod -t memtrace .
+
+# Run
+docker run -d \
+  --name memtrace \
+  -p 3106:3106 \
+  -e API_KEY="sk-your-qwen-api-key" \
+  -e GOOGLE_CLIENT_ID="your-google-client-id" \
+  -v memtrace_data:/app/data \
+  memtrace
+```
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `API_KEY` | Yes | Qwen Cloud API key (sk-...) |
+| `LLM_PROVIDER` | No | LLM provider (`qwen`, `openai`, `gemini`) — default `qwen` |
+| `LLM_MODEL` | No | Model name — default `qwen-turbo` |
+| `EMB_PROVIDER` | No | Embedding provider — default `qwen` |
+| `GOOGLE_CLIENT_ID` | No | Google OAuth client ID (required for login) |
+| `JWT_SECRET` | No | JWT signing secret (auto-generated if absent) |
+| `PORT` | No | Server port — default `3106` |
+| `NODE_ENV` | No | `production` or `development` |
+| `DB_TYPE` | No | Database backend — `offline` (SQLite), `turso`, `postgres` |
+| `LIMIT_*` | No | Simulation limits (agents, rounds, ticks) |
 
 ---
 
-## 4. Usage, Installation & API Reference
+## API Reference
 
-### A. Prerequisites & Local LLM Server Setup
+### Authentication
 
-1. **Python Dependencies**:
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/auth/google` | POST | Login with Google ID token |
+| `/api/auth/me` | GET | Get current user profile (requires auth) |
+| `/api/auth/logout` | POST | Clear session |
 
-   ```bash
-   pip install torch transformers fastapi uvicorn pydantic nest-asyncio accelerate
-   ```
-2. **Boot the Local Server**:
-   Open a terminal and run:
+### LLM Proxy (authenticated, rate-limited)
 
-   ```bash
-   jupyter nbconvert --to script local_llm_server.ipynb
-   python3 local_llm_server.py
-   ```
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/llm/summarize` | POST | Summarize text via Qwen |
+| `/api/llm/tags` | POST | Generate tags via Qwen |
+| `/api/llm/embed` | POST | Generate embedding via Qwen |
+| `/api/llm/generate-answer` | POST | Generate answer with context |
+| `/api/llm/config` | GET | Get LLM provider config (public) |
 
-   *The server loads Qwen3-0.6B and listens on `http://127.0.0.1:8000/generate`.*
+### Simulation
 
-### B. Core API server Setup
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v4/simulate/council` | POST | Run Council deliberation |
+| `/api/v4/simulate/mesh` | POST | Run Mesh social simulation |
+| `/api/v4/simulate/tree` | POST | Run Tree consequence search |
+| `/api/v4/simulate/memtrace` | POST | Run MemTrace mode |
+| `/api/v4/jobs/:id` | GET | Get simulation job status/results |
+| `/api/v4/jobs/:id` | DELETE | Cancel simulation |
 
-1. **Install Dependencies**:
+### Memory
 
-   ```bash
-   npm install
-   ```
-2. **Start the API Server**:
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/v1/ingest` | POST | Ingest text into memory |
+| `/v1/search` | POST | Search ingested memory |
+| `/v1/thread` | GET | Get thread state |
+| `/v1/chunk` | POST | Create chunk |
+| `/v1/chunk/:id` | GET/PUT/DELETE | CRUD operations on chunks |
 
-   ```bash
-   npm run dev
-   ```
+### Automation
 
-   *The Express server boots on `http://127.0.0.1:3005`.*
-3. **Running the Test Suite**:
-
-   ```bash
-   ./test/run_tests_v2.sh
-   ```
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v4/automation/router` | POST | Auto-select and run simulation mode |
+| `/api/v4/automation/divergence` | POST | Run all modes and compare |
+| `/api/v4/automation/status` | GET | Get automation status |
 
 ---
 
-### C. API Endpoint Documentation
+## Deployment
 
-#### 1. Ingest Text Context
+Deployed on **Alibaba Cloud Simple Application Server (SAS)** — Singapore region, 896MB RAM, 1GB swap.
 
-- **Endpoint**: `POST /v1/ingest`
-- **Headers**: `Content-Type: application/json`
-- **Request Payload**:
+- **Container**: Docker via GHCR (GitHub Container Registry)
+- **CI/CD**: GitHub Actions → build image → push to GHCR → SSH into SAS → docker-compose pull & up
+- **Tunnel**: Cloudflare Tunnel (no open ports besides 80/443 via Cloudflare proxy)
+- **Database**: SQLite (offline mode) on persistent Docker volume
+- **Cache**: Cloudflare CDN caches extension bundle for 1h, cache-bust with `?v=N`
 
-```json
-{
-  "text": "The company has announced a shift towards fully remote work. While developers are excited, operations teams are raising concerns about shipping physical assets.",
-  "reference": "https://company.internal/policy/work-location-memo",
-  "uuid": "43e24522-9a75-43f0-83f9-48b3ca18cb6f"
-}
+### Architecture
+
 ```
-
-- **Response Payload**:
-
-```json
-{
-  "status": "success",
-  "chunks_ingested": 2,
-  "edges_created": 1,
-  "reference_id": "43e24522-9a75-43f0-83f9-48b3ca18cb6f"
-}
-```
-
-#### 2. Search Ingested Context
-
-- **Endpoint**: `POST /v1/search`
-- **Request Payload**:
-
-```json
-{
-  "query": "remote work policy concerns",
-  "limit": 5
-}
-```
-
-- **Response Payload**:
-
-```json
-{
-  "query": "remote work policy concerns",
-  "results": [
-    {
-      "chunk": "operations teams are raising concerns about shipping physical assets...",
-      "score": 0.88,
-      "reference": "https://company.internal/policy/work-location-memo"
-    }
-  ]
-}
-```
-
-#### 3. Trigger Swarm Simulation
-
-- **Endpoint**: `POST /api/v4/simulate/swarm`
-- **Request Payload**:
-
-```json
-{
-  "scenario": "How will our launch of the decentralized storage protocol affect enterprise compliance teams?",
-  "rounds": 3,
-  "agentCount": 12,
-  "uuid": "bf8c5477-1084-44f0-b00f-35e3a6664138"
-}
-```
-
-- **Response Payload**:
-
-```json
-{
-  "status": "enqueued",
-  "jobId": "job_1717012345678",
-  "message": "Swarm simulation enqueued successfully."
-}
-```
-
-#### 4. Get Swarm Job Status
-
-- **Endpoint**: `GET /api/v4/jobs-swarm/:id`
-- **Response Payload**:
-
-```json
-{
-  "jobId": "job_1717012345678",
-  "status": "completed",
-  "progress": 100,
-  "result": {
-    "report": "# Swarm Simulation Report\n## Dominant Risk: Compliance friction...",
-    "roundsCompleted": 3,
-    "confidenceIndex": 0.76
-  }
-}
-```
-
-#### 5. Chat with Swarm Agent (ReporterAgent Mode)
-
-- **Endpoint**: `POST /api/v4/swarm/:simId/agent/:agentId/chat`
-- **Request Payload**:
-
-```json
-{
-  "message": "Why did you vote to defect from the Enterprise faction in Round 2?"
-}
-```
-
-- **Response Payload**:
-
-```json
-{
-  "agentId": "CyberSecurity_5",
-  "response": "The compliance memo introduced excessive friction for security key rotation, making my alignment with the Enterprise baseline indefensible."
-}
+GitHub Push → GitHub Actions → Build Docker Image → Push to GHCR
+                                                       ↓
+                                           Alibaba SAS (docker-compose pull)
+                                                       ↓
+                                           Cloudflare Tunnel → Public Internet
 ```
 
 ---
 
-## 5. MiroFish Landing Page Copy & Structural Assets
+## License
 
-To enable rapid deployment of a landing page frontend, we have structured the complete copywriting assets, playbooks, prompts, and research frameworks directly below:
+MIT — see [LICENSE](memtrace/LICENSE)
 
-### A. The Core Scenario Gallery
+## Repository
 
-Use these templates to configure scenario routing on the landing page UI:
-
-1. **Public Opinion (Narrative Escalation Map)**
-
-   - *Description*: Model how institutions, media, influencers, and observers reshape the first narrative around an incident.
-   - *Typical Input*: Incident brief + policy memo.
-   - *MemTrace Integration*: Parses the incident brief into a graph structure where node weights determine narrative dominance.
-2. **Launch Reaction (Top Misunderstanding Risk)**
-
-   - *Description*: Stress-test product messaging before competitors, users, and commentators interpret the launch for you.
-   - *Typical Input*: Launch brief + FAQ.
-   - *MemTrace Integration*: Measures stance divergence to highlight how external actors are likely to misinterpret specific messaging points.
-3. **Policy Impact (Downstream Pressure Analysis)**
-
-   - *Description*: Inspect how different stakeholder groups interpret a draft policy once incentives and compliance pressure collide.
-   - *Typical Input*: Policy draft + stakeholder notes.
-   - *MemTrace Integration*: Models faction dynamics showing where compliance incentives trigger opposing alliances.
-4. **Brand Crisis (Crisis Response Gap)**
-
-   - *Description*: See how a fragile launch or reputational event expands when the public question drifts away from internal intent.
-   - *Typical Input*: Risk memo + response plan.
-   - *MemTrace Integration*: Simulates three rounds of public escalation to identify vulnerabilities in the response strategy.
-5. **Finance Case (Sentiment Divergence Summary)**
-
-   - *Description*: Run a market-facing scenario where management, analysts, and retail narratives react to the same financial signal differently.
-   - *Typical Input*: Earnings note + market context.
-   - *MemTrace Integration*: Sets up distinct corporate and retail faction nodes with varying access to simulated market news feeds.
-6. **Literary Continuation (Character Pressure Graph)**
-
-   - *Description*: Treat a fictional world as a live graph of motives and memory, then test how one new event changes the story.
-   - *Typical Input*: Narrative chapter + continuation brief.
-   - *MemTrace Integration*: Models narrative continuity by reading character files and mapping changes in relationships as graph edges.
-
-### B. Interactive Simulation Dashboard Components
-
-The interface should expose three visual tabs:
-
-- **Graph View**: Visualizes the scenario ontology as a live node-edge network mapping faction stances and dynamic trust edges.
-- **Simulation View**: Displays a real-time feed of multi-agent social interactions (posts, comments, follows) updating round-by-round.
-- **Report View**: Provides the compiled Markdown intelligence summary containing deterministic scoring indexes.
-
-### C. Executive readouts & Prompts
-
-- **Dominant Risk Summary**: Compresses predicted trajectories into concise readouts (e.g., *Sustained trust erosion from delayed response*).
-- **Key Actors Indicator**: Highlights nodes whose influence scores mutate fastest (e.g., *Narrative drivers outrun formal clarification*).
-- **Prompt Recipe Library**:
-  - *Public Opinion Forecast*: "Forecast how the uploaded incident evolves across public platforms, who amplifies it first, and what response slows trust erosion over three rounds."
-  - *Launch Stress Test*: "Simulate how customers, competitors, and commentators react to this launch brief, and identify the most expensive misunderstanding if left unanswered."
-  - *Policy Reaction*: "Simulate how institutions, affected groups, and public commentators interpret this policy draft, and identify the largest downstream pressure."
-  - *Narrative Continuation*: "Simulate how this narrative world evolves after the new event, which characters gain influence first, and what tension changes the final outcome."
-
-### D. Trust & Research Framework
-
-- **What MiroFish Simulates**: Actor incentives, motive conflict, platform-native narrative spread, and sequential round effects.
-- **What Remains Human**: Choosing the scenario boundary, inspecting graph completeness (missing pressure), and making high-stakes operating calls.
-- **Epistemic Approach**: Forecasts are treated as inspectable hypotheses and reviewable evidence, not absolute certainty.
-
----
-
-## 6. Upgrades & Deployment Publishing Guide
-
-To publish MemTrace as a public, production-grade web application:
-
-```
-                  +--------------------------------+
-                  |    Nginx Reverse Proxy / SSL   |
-                  +---------------+----------------+
-                                  |
-            +---------------------+---------------------+
-            | (Port 80/443)                             | (Port 8000)
-            v                                           v
-+-----------------------+                    +---------------------+
-| Express API Server    |                    | Local LLM Sidecar   |
-| (Node.js Cluster)     |                    | (FastAPI / CUDA)    |
-+-----------+-----------+                    +----------+----------+
-            |                                           |
-            +---------------------+---------------------+
-                                  | (Internal Network)
-                                  v
-                    +-----------------------------+
-                    | Postgres DB (Multi-Tenant)  |
-                    +-----------------------------+
-```
-
-### Next Steps for Production:
-
-1. **Database Migration**: Swap SQLite for a PostgreSQL instance. Update standard node configurations to pool queries concurrently.
-2. **Reverse Proxying**: Use Nginx to expose `/api/v4/simulate/swarm` externally, routing HTTPS queries with secure headers.
-3. **Frontend Publishing**: Build the user-facing webapp dashboard with a modern component library, binding real-time state hooks to the Express API. Expose the **Scenario Gallery** templates using pre-loaded JSON contexts.
-
----
-
-Similar companies: Similate ai, Simfolk, User Intuition, SYMAR, and Delve AI
-https://societies.io/
-https://www.similate.ai/
-https://www.symar.ai/
-https://simfolk.ai/
-
----
-
-A/B testing
-
-PersonaMatrix
-DecisionPilot
-Pathfinder AI
-MindWeave
-SimSphere
-Cognitive Mesh
-Memtrace
-Consensus AI
-
-Example:
-
-Before sending an email:
-
-<pre class="overflow-visible! px-0!" data-start="2265" data-end="2303"><div class="relative w-full mt-4 mb-1"><div class=""><div class="relative"><div class="h-full min-h-0 min-w-0"><div class="h-full min-h-0 min-w-0"><div class="border border-token-border-light border-radius-3xl corner-superellipse/1.1 rounded-3xl"><div class="h-full w-full border-radius-3xl bg-token-bg-elevated-secondary corner-superellipse/1.1 overflow-clip rounded-3xl lxnfua_clipPathFallback"><div class="pointer-events-none absolute end-1.5 top-1 z-2 md:end-2 md:top-1"></div></div></div></div></div></div></div></div></pre>
-
-<pre class="overflow-visible! px-0!" data-start="2265" data-end="2303"><div class="relative w-full mt-4 mb-1"><div class=""><div class="relative"><div class="h-full min-h-0 min-w-0"><div class="h-full min-h-0 min-w-0"><div class="border border-token-border-light border-radius-3xl corner-superellipse/1.1 rounded-3xl"><div class="h-full w-full border-radius-3xl bg-token-bg-elevated-secondary corner-superellipse/1.1 overflow-clip rounded-3xl lxnfua_clipPathFallback"><div class="relative"><div class="pe-11 pt-3"><div class="relative z-0 flex max-w-full"><div id="code-block-viewer" dir="ltr" class="q9tKkq_viewer cm-editor z-10 light:cm-light dark:cm-light flex h-full w-full flex-col items-stretch ͼs ͼ16"><div class="cm-scroller"><pre class="cm-content q9tKkq_readonly m-0"><code><span>Simulate likely reactions.</span></code></pre></div></div></div></div></div></div></div></div></div><div class=""><div class=""></div></div></div></div></div></pre>
-
-Before a sales call:
-
-<pre class="overflow-visible! px-0!" data-start="2327" data-end="2359"><div class="relative w-full mt-4 mb-1"><div class=""><div class="relative"><div class="h-full min-h-0 min-w-0"><div class="h-full min-h-0 min-w-0"><div class="border border-token-border-light border-radius-3xl corner-superellipse/1.1 rounded-3xl"><div class="h-full w-full border-radius-3xl bg-token-bg-elevated-secondary corner-superellipse/1.1 overflow-clip rounded-3xl lxnfua_clipPathFallback"><div class="pointer-events-none absolute end-1.5 top-1 z-2 md:end-2 md:top-1"></div></div></div></div></div></div></div></div></pre>
-
-<pre class="overflow-visible! px-0!" data-start="2327" data-end="2359"><div class="relative w-full mt-4 mb-1"><div class=""><div class="relative"><div class="h-full min-h-0 min-w-0"><div class="h-full min-h-0 min-w-0"><div class="border border-token-border-light border-radius-3xl corner-superellipse/1.1 rounded-3xl"><div class="h-full w-full border-radius-3xl bg-token-bg-elevated-secondary corner-superellipse/1.1 overflow-clip rounded-3xl lxnfua_clipPathFallback"><div class="relative"><div class="pe-11 pt-3"><div class="relative z-0 flex max-w-full"><div id="code-block-viewer" dir="ltr" class="q9tKkq_viewer cm-editor z-10 light:cm-light dark:cm-light flex h-full w-full flex-col items-stretch ͼs ͼ16"><div class="cm-scroller"><pre class="cm-content q9tKkq_readonly m-0"><code><span>Simulate objections.</span></code></pre></div></div></div></div></div></div></div></div></div><div class=""><div class=""></div></div></div></div></div></pre>
-
-Before hiring:
-
-<pre class="overflow-visible! px-0!" data-start="2377" data-end="2412"><div class="relative w-full mt-4 mb-1"><div class=""><div class="relative"><div class="h-full min-h-0 min-w-0"><div class="h-full min-h-0 min-w-0"><div class="border border-token-border-light border-radius-3xl corner-superellipse/1.1 rounded-3xl"><div class="h-full w-full border-radius-3xl bg-token-bg-elevated-secondary corner-superellipse/1.1 overflow-clip rounded-3xl lxnfua_clipPathFallback"><div class="pointer-events-none absolute end-1.5 top-1 z-2 md:end-2 md:top-1"></div></div></div></div></div></div></div></div></pre>
-
-<pre class="overflow-visible! px-0!" data-start="2377" data-end="2412"><div class="relative w-full mt-4 mb-1"><div class=""><div class="relative"><div class="h-full min-h-0 min-w-0"><div class="h-full min-h-0 min-w-0"><div class="border border-token-border-light border-radius-3xl corner-superellipse/1.1 rounded-3xl"><div class="h-full w-full border-radius-3xl bg-token-bg-elevated-secondary corner-superellipse/1.1 overflow-clip rounded-3xl lxnfua_clipPathFallback"><div class="relative"><div class="pe-11 pt-3"><div class="relative z-0 flex max-w-full"><div id="code-block-viewer" dir="ltr" class="q9tKkq_viewer cm-editor z-10 light:cm-light dark:cm-light flex h-full w-full flex-col items-stretch ͼs ͼ16"><div class="cm-scroller"><pre class="cm-content q9tKkq_readonly m-0"><code><span>Simulate team dynamics.</span></code></pre></div></div></div></div></div></div></div></div></div><div class=""><div class=""></div></div></div></div></div></pre>
-
-Before posting:
-
-<pre class="overflow-visible! px-0!" data-start="2431" data-end="2477"><div class="relative w-full mt-4 mb-1"><div class=""><div class="relative"><div class="h-full min-h-0 min-w-0"><div class="h-full min-h-0 min-w-0"><div class="border border-token-border-light border-radius-3xl corner-superellipse/1.1 rounded-3xl"><div class="h-full w-full border-radius-3xl bg-token-bg-elevated-secondary corner-superellipse/1.1 overflow-clip rounded-3xl lxnfua_clipPathFallback"><div class="pointer-events-none absolute end-1.5 top-1 z-2 md:end-2 md:top-1"></div></div></div></div></div></div></div></div></pre>
-
-```
-Simulate audience interpretations.
-```
-
----
-
-
----
+[github.com/hazeezadebayo/memtrace-simulith](https://github.com/hazeezadebayo/memtrace-simulith)
