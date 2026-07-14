@@ -413,10 +413,8 @@ export async function proposeGenerativeReactions(persona, branches, scenario, ev
       - ${noveltyDesc}
       
       Instructions:
-      You are acting as an ADVISOR to the user. The user has presented a scenario/question.
-      This branch is a proposed strategy FOR THE USER.
-      Evaluate whether this specific branch is the right path FOR THE USER, analyzing it strictly through the lens of your persona's traits, background, and lived experience.
-      Do NOT pretend you are the one making the decision for your own life or career.
+      You are roleplaying as this persona — you ARE them. Give your DIRECT personal opinion on whether this branch is a sound strategy for the user.
+      Speak in FIRST PERSON as if you are this person giving advice. NEVER refer to yourself in third person.
       
       Branch Title: ${branch.title}
       Branch Description: ${branch.description}
@@ -428,7 +426,7 @@ export async function proposeGenerativeReactions(persona, branches, scenario, ev
       CRITICAL RULES FOR "text" (1-2 sentences):
       1. Sound like a real human from your specific demographic/professional background.
       2. Cite at least one specific piece of evidence or fact from the scenario to justify your stance.
-      3. Speak naturally as an expert advisor. Do not refer to yourself as a persona or simulation.
+      3. Speak in FIRST PERSON as the persona. Never refer to yourself in third person or as a persona/simulation.
       
       ${avoidGroupthinkStr}
       
@@ -576,9 +574,9 @@ export async function conductCrossExamination(persona, branch, scenario, initial
     Persona's Initial Argument: "${initialText}"
     
     INSTRUCTIONS:
-    1. The Persona is acting as an ADVISOR to the user, evaluating what the user should do in their scenario. They are NOT making the decision for their own life or career.
-    2. Formulate ONE highly specific, penetrating "Judge Question" that challenges the persona's advisory stance on this branch FOR THE USER. Explore a blind spot, hidden bias, or counterfactual in their initial argument regarding the user's context. NEVER explicitly mention the persona's numerical parameters (like "risk bias of 0.1").
-    3. Then, simulate the Persona's direct answer to that exact question, defending or modifying their advice for the user while staying strictly in character. The Persona must also NEVER explicitly state their numeric parameters.
+    1. The Persona is roleplaying as themselves — they ARE this person giving advice. They speak in FIRST PERSON and NEVER refer to themselves in third person.
+    2. Formulate ONE highly specific, penetrating "Judge Question" that challenges the persona's advisory stance on this branch. Explore a blind spot, hidden bias, or counterfactual in their initial argument. NEVER explicitly mention the persona's numerical parameters (like "risk bias of 0.1").
+    3. Then, simulate the Persona's direct first-person answer to that exact question, defending or modifying their advice while staying strictly in character. The Persona must also NEVER explicitly state their numeric parameters.
     4. The Persona must then declare their FINAL committed stance ("support" or "push back") on whether the user should take this path.
     
     Return ONLY valid JSON. No markdown.
@@ -677,9 +675,7 @@ export async function generateCustomPersonaFromDescription(description) {
     riskBias,
     evidenceDemand,
     noveltySeek,
-    clarityNeed,
-    lens: parsed.bio || 'Custom Perspective',
-    note: parsed.bio,
-    backstory: parsed.bio
+    clarityNeed
+
   };
 }

@@ -206,7 +206,8 @@ export async function simulateScenario(input = {}, state = {}, emit = () => {}) 
         clarityNeed
       };
       persona.cluster = pickCluster(persona);
-      persona.note = p.bio || personaNote(persona, evidence);
+      persona.note = personaNote(persona, evidence);
+      persona.backstory = persona.backstory || p.bio || 'Expert';
       persona.responseTone = responseTone(persona, evidence);
       generated.push(persona);
     });
