@@ -33,7 +33,7 @@ import { ThreadletOrchestrator } from './core/orchestrator.js';
 
 async function getDeviceUUID() {
     const isExtension = window.location.protocol.startsWith('chrome-extension');
-    const API_BASE = isExtension ? 'http://localhost:3106' : '';
+    const API_BASE = isExtension ? 'https://simulith.hazeezadebayo.dev' : '';
     window.API_BASE = API_BASE; // Expose globally for other functions
     try {
         const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' });
