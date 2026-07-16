@@ -554,9 +554,11 @@ export async function simulateMesh(input = {}, emit = () => {}) {
         
         let similarity = 0;
         let sharedKeys = 0;
-        for (const key of Object.keys(a.beliefs || {})) {
-          if (b.beliefs && b.beliefs[key] !== undefined) {
-            const diff = Math.abs(a.beliefs[key] - b.beliefs[key]);
+        const aPos = a.beliefs?.positions || {};
+        const bPos = b.beliefs?.positions || {};
+        for (const key of Object.keys(aPos)) {
+          if (bPos[key] !== undefined) {
+            const diff = Math.abs(aPos[key] - bPos[key]);
             similarity += (1 - diff);
             sharedKeys++;
           }
@@ -564,11 +566,11 @@ export async function simulateMesh(input = {}, emit = () => {}) {
         
         if (sharedKeys > 0) {
           const avgSim = similarity / sharedKeys;
-          if (Math.abs(avgSim) > 0.1) {
+          if (Math.abs(avgSim) > 0.05) {
             relationalEdges.push({
               src_agent: a.id,
               dst_agent: b.id,
-              rel_type: avgSim > 0 ? 'aligned' : 'clashed',
+              rel_type: avgSim > 0.15 ? 'aligned' : (avgSim < -0.15 ? 'clashed' : 'neutral'),
               weight: avgSim,
               evidence: `Belief alignment score: ${avgSim.toFixed(2)}`
             });

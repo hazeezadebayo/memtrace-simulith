@@ -1,6 +1,6 @@
 import { Tool } from './Tool.js';
 import { callLLM } from '../llm/ai.js';
-import { WikipediaAdapter } from './search/WikipediaAdapter.js';
+import { WikipediaTool } from './WikipediaTool.js';
 
 let _memory = null;
 export function injectMemory(memoryModule) {
@@ -40,9 +40,9 @@ export class CheckFactsTool extends Tool {
     required: ['claim']
   };
 
-  constructor(searchAdapter = null) {
+  constructor(wikipediaTool = null) {
     super();
-    this.searchAdapter = searchAdapter || new WikipediaAdapter();
+    this.wikipediaTool = wikipediaTool || new WikipediaTool();
   }
 
   async execute(args) {
@@ -55,17 +55,15 @@ export class CheckFactsTool extends Tool {
 
     // 1. Search Wikipedia
     try {
-      const wikiResults = await this.searchAdapter.search(domain ? `${claim} ${domain}` : claim);
-      if (wikiResults.results.length > 0) {
-        for (const r of wikiResults.results) {
-          evidence.push({
-            source: 'wikipedia',
-            title: r.title,
-            excerpt: r.excerpt.slice(0, 500),
-            url: r.url,
-            relevance: r.relevance
-          });
-        }
+      const result = await this.wikipediaTool.execute({ query: domain ? `${claim} ${domain}` : claim });
+      if (result && result.title && !result.error) {
+        evidence.push({
+          source: 'wikipedia',
+          title: result.title,
+          excerpt: (result.excerpt || '').slice(0, 500),
+          url: result.url,
+          relevance: 1.0
+        });
       }
     } catch (err) {
       console.warn('[CheckFactsTool] Wikipedia search failed:', err.message);

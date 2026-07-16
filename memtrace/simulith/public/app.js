@@ -1744,24 +1744,32 @@ async function runCouncilScenario() {
   if (interviewLog) interviewLog.innerHTML = '<p style="color:var(--text-secondary);font-size:.78rem;font-style:italic;">No cross-examinations this run — all personas committed to a firm stance on first evaluation.</p>';
 
   const payload = {
+    mode: 'council',
     question: questionInput.value.trim(),
     facts: lineList(factsInput.value),
     customPersonas: customPersonaList.filter(p => p.trim() !== ''),
     branchCount: Number(branchCountInput.value),
     personaCount: Number(personaCountInput.value)
   };
-  const res = await fetch('/api/v4/simulate/council', {
+  const res = await fetch('/api/v4/automation/router', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal: currentAbortController ? currentAbortController.signal : undefined
   });
-  const queued = await res.json();
   if (!res.ok) {
-    if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${queued.error}`);
-    throw new Error(queued.error || 'Failed to queue simulation');
+    let errorMessage = 'Council simulation failed';
+    try {
+      const errorData = await res.json();
+      errorMessage = errorData.error || errorMessage;
+      if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${errorMessage}`);
+    } catch(e) {
+      errorMessage = `Gateway Error: ${res.status} ${res.statusText}`;
+    }
+    throw new Error(errorMessage);
   }
-  logConsole(`JOB QUEUED: ${queued.jobId}`, 'system');
-  const result = await pollJob(queued.jobId, '/api/v4/jobs');
-  logConsole('SIMULATION COMPLETE.', 'success');
+  const data = await res.json();
+  const result = data.simulation_result;
+  logConsole(`COUNCIL COMPLETE.`, 'success');
   await rerender(result);
   renderInterviewPanel(collectedInterviews);
 }
@@ -1771,24 +1779,31 @@ async function runMeshScenario() {
   meshFeedPanel.classList.remove('visible');
 
   const payload = {
+    mode: 'mesh',
     question: questionInput.value.trim(),
     facts: lineList(factsInput.value),
     customPersonas: customPersonaList.filter(p => p.trim() !== ''),
     agentCount: Math.max(DEFAULT_CONFIG.LIMITS.mesh.minAgents, Math.min(DEFAULT_CONFIG.LIMITS.mesh.maxAgents, Number(document.getElementById('agent-count').value))),
     tickCount: Math.max(DEFAULT_CONFIG.LIMITS.mesh.minTicks, Math.min(DEFAULT_CONFIG.LIMITS.mesh.maxTicks, Number(document.getElementById('tick-count').value))),
   };
-  const res = await fetch('/api/v4/simulate/mesh', {
+  const res = await fetch('/api/v4/automation/router', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal: currentAbortController ? currentAbortController.signal : undefined
   });
-  const queued = await res.json();
   if (!res.ok) {
-    if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${queued.error}`);
-    throw new Error(queued.error || 'Failed to queue mesh');
+    let errorMessage = 'Mesh simulation failed';
+    try {
+      const errorData = await res.json();
+      errorMessage = errorData.error || errorMessage;
+      if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${errorMessage}`);
+    } catch(e) {
+      errorMessage = `Gateway Error: ${res.status} ${res.statusText}`;
+    }
+    throw new Error(errorMessage);
   }
-  logConsole(`MESH JOB QUEUED: ${queued.jobId}`, 'system');
-
-  const result = await pollJob(queued.jobId, '/api/v4/jobs-mesh');
+  const data = await res.json();
+  const result = data.simulation_result;
   currentMeshSimId = result.id;
   logConsole(`MESH COMPLETE. ${result.interactions?.length || 0} INTERACTIONS RECORDED.`, 'success');
 
@@ -1888,6 +1903,7 @@ async function runRouterScenario() {
 
   const limits = DEFAULT_CONFIG.LIMITS;
   const payload = {
+    mode: 'router',
     question: questionInput.value.trim(),
     facts: lineList(factsInput.value),
     customPersonas: customPersonaList.filter(p => p.trim() !== ''),
@@ -3535,21 +3551,32 @@ async function _treeLaunch() {
 
   try {
     logConsole(`PHYSICS ENGINE BOUNDING VARIABLES...`, 'system');
-    const res = await fetch('/api/v4/simulate/tree', {
+    const res = await fetch('/api/v4/automation/router', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${_treeGetToken()}`
-      },
-      body: JSON.stringify({ decision, context, depth, branchingFactor: branching })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'tree',
+        question: decision,
+        facts: context ? [context] : [],
+        depth,
+        branchingFactor: branching
+      })
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `Server error ${res.status}`);
+      let errorMessage = 'Tree simulation failed';
+      try {
+        const errorData = await res.json();
+        errorMessage = errorData.error || errorMessage;
+        if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${errorMessage}`);
+      } catch(e) {
+        errorMessage = `Gateway Error: ${res.status} ${res.statusText}`;
+      }
+      throw new Error(errorMessage);
     }
 
     logConsole(`MCTS PRUNING ACTIVE...`, 'system');
-    _treeData = await res.json();
+    const _routerData = await res.json();
+    _treeData = _routerData.simulation_result;
 
     currentTelemetry.determinedField = (_treeData.domain || 'UNKNOWN').toUpperCase();
     currentTelemetry.status = 'completed';

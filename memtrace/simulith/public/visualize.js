@@ -183,8 +183,9 @@ export function renderRelationsGraphSvg(agents = [], edges = []) {
     if (!srcNode || !dstNode) return '';
 
     const weight = Number(edge.weight || 0.5);
-    const isPositive = weight > 0;
-    const color = isPositive ? '#4caf85' : '#e05c5c';
+    let color = '#888888';
+    if (weight > 0.15) color = '#4caf85';
+    else if (weight < -0.15) color = '#e05c5c';
     const strokeWidth = Math.max(1, Math.min(6, Math.abs(weight) * 3));
     const relType = esc(edge.rel_type || edge.relType || 'interacted');
     const evidence = esc(edge.evidence || '');

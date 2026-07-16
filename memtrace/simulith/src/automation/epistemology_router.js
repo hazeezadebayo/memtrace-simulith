@@ -143,8 +143,23 @@ export async function routeQuery(baseUrl, token, payload, signal) {
   const query = payload.question || payload.decision || '';
   if (!query) throw new Error('Query is required for Router Mode.');
 
-  // Propagate abort immediately if already cancelled
   if (signal?.aborted) throw new Error('Simulation Cancelled by user.');
+
+  // If caller explicitly specified a mode, skip LLM classification
+  const explicitMode = payload.mode?.toLowerCase();
+  if (explicitMode && ['council', 'mesh', 'tree'].includes(explicitMode)) {
+    clearAutomationLogs(payload.uuid);
+    logAutomation(payload.uuid, 'router', `Manual mode selected: ${explicitMode}`);
+    setAutomationState(payload.uuid, `RUNNING ${explicitMode.toUpperCase()}...`);
+    const simulateFn = explicitMode === 'mesh' ? runMesh : explicitMode === 'tree' ? runTree : runCouncil;
+    const simulationResult = await simulateFn(baseUrl, token, payload, signal);
+    setAutomationState(payload.uuid, 'COMPLETED');
+    return {
+      router_selection: { mode: explicitMode, reasoning: 'Manually selected by user.' },
+      durationSec: Math.round(Date.now() / 1000),
+      simulation_result: simulationResult
+    };
+  }
 
   clearAutomationLogs(payload.uuid);
   logAutomation(payload.uuid, 'router', 'Evaluating domain classification...');

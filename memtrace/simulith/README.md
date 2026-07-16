@@ -332,7 +332,7 @@ docker run -d \
 | `/api/v4/simulate/council` | POST | Run Council deliberation |
 | `/api/v4/simulate/mesh` | POST | Run Mesh social simulation |
 | `/api/v4/simulate/tree` | POST | Run Tree consequence search |
-| `/api/v4/simulate/memtrace` | POST | Run MemTrace mode |
+
 | `/api/v4/jobs/:id` | GET | Get simulation job status/results |
 | `/api/v4/jobs/:id` | DELETE | Cancel simulation |
 

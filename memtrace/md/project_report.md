@@ -108,7 +108,7 @@ MemTrace emulates the forecasting goals of platforms like MemTrace but introduce
 1. **Mesh Generation Optimization**: Implemented the strict 1:9 archetype distribution in `memtrace_mesh.js`.
 2. **Memory Simplification**: Removed the redundant `memoryImprint` property from archetypes.
 3. **Graph Robustness**: Deprecated fallback KG generation, enforcing explicit error propagation in `knowledge_graph.js`.
-4. **API Authentication**: Secured all endpoints (`/v1/ingest`, `/api/v4/simulate/memtrace`) via authenticated token middleware.
+4. **API Authentication**: Secured all endpoints (`/v1/ingest`, `/api/v4/simulate/council`) via authenticated token middleware.
 5. **Zero-Shot Action Likelihood Classifier**: Integrated action probability weighting and sampling in `memtrace_engine.js`.
 6. **Dynamic Faction Tipping**: Added async faction-tipping evaluation at the end of each round.
 7. **Edge Sentiment Classifier**: Integrated dynamic edge-weight tuning based on interaction sentiment intensity.
