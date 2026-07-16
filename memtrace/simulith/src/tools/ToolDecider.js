@@ -1,5 +1,5 @@
 import { callLLM, parseJson } from '../llm/ai.js';
-import { DEFAULT_CONFIG } from '../../extension/env/config.js';
+import { DEFAULT_CONFIG } from '../../../extension/env/config.js';
 import { WikipediaTool } from './WikipediaTool.js';
 import { BinanceTool } from './BinanceTool.js';
 import { HnTrendsTool } from './HnTrendsTool.js';
