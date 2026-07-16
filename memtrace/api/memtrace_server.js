@@ -166,7 +166,7 @@ app.get('/extension/env/config.js', (req, res) => {
 
 // Serve only whitelisted extension files (safe: .wasm is compiled binary, not source)
 const extensionDir = path.join(__dirname, '..', 'extension');
-const ALLOWED_EXTENSION = new Set(['/popup.html', '/popup.bundle.js']);
+const ALLOWED_EXTENSION = new Set(['/popup.html', '/popup.bundle.js', '/popup-shim.js']);
 const WASM_SUFFIX = '.wasm';
 app.use('/extension', (req, res, next) => {
     if (ALLOWED_EXTENSION.has(req.path)) return next();
