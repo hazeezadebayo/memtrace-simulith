@@ -21,7 +21,8 @@ export async function callQwen(apiKey, prompt, model = 'qwen3-8b', temperature =
         const messages = systemMsg ? [{ role: 'system', content: systemMsg }, { role: 'user', content: prompt }] : [{ role: 'user', content: prompt }];
         const body = {
             model: model,
-            messages
+            messages,
+            enable_thinking: false
         };
 
         if (temperature !== undefined) {
