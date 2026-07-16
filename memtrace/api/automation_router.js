@@ -3,7 +3,7 @@ import { authenticate, enforceOrigin } from './auth_server.js';
 import { getUser } from './db_users.js';
 import { checkInjectionGuardrail, getLLMCallCount } from '../extension/core/llm_agent.js';
 import { routeQuery, runDivergenceAnalysis } from '../simulith/src/automation/index.js';
-import { getAutomationState, getAutomationLogs, isCancellationError } from '../simulith/src/automation/utils.js';
+import { getAutomationState, getAutomationLogs, logAutomation, isCancellationError } from '../simulith/src/automation/utils.js';
 
 const router = express.Router();
 router.use(enforceOrigin);
@@ -55,6 +55,32 @@ router.post('/router', authenticate, async (req, res) => {
     const user = await getUser(req.user.uuid);
     if (!user || user.tokens < 50) {
       return res.status(402).json({ error: `Insufficient tokens for Router Mode.` });
+    }
+
+    // Tool Enrichment: fetch live data before simulation
+    try {
+      const { enrichScenarioWithTools } = await import('../simulith/src/tools/ToolDecider.js');
+      logAutomation(req.user.uuid, 'enrichment', 'Analyzing query for relevant data sources...');
+      const enrichment = await enrichScenarioWithTools({
+        question: payload.question,
+        facts: payload.facts
+      });
+      if (enrichment?.facts?.length) {
+        payload._enriched = enrichment.tool;
+        payload._enrichedQuery = enrichment.query;
+        payload.facts = [...enrichment.facts, ...(payload.facts || [])];
+        logAutomation(req.user.uuid, 'enrichment', `Tool selected: ${enrichment.tool.toUpperCase()}`);
+        logAutomation(req.user.uuid, 'enrichment', `Generated query: "${enrichment.query}"`);
+        logAutomation(req.user.uuid, 'enrichment', `Retrieved ${enrichment.facts.length} fact(s).`);
+        for (const fact of enrichment.facts) {
+          logAutomation(req.user.uuid, 'enrichment', `[DATA] ${fact.slice(0, 200)}${fact.length > 200 ? '...' : ''}`);
+        }
+      } else {
+        logAutomation(req.user.uuid, 'enrichment', 'No relevant data sources found — proceeding with existing context.');
+      }
+    } catch (err) {
+      logAutomation(req.user.uuid, 'enrichment', `Tool enrichment failed: ${err.message}`);
+      console.warn('[Enrichment] Non-fatal:', err.message);
     }
 
     const token = extractToken(req);
@@ -137,6 +163,32 @@ router.post('/divergence', authenticate, async (req, res) => {
     const user = await getUser(req.user.uuid);
     if (!user || user.tokens < 150) {
       return res.status(402).json({ error: `Insufficient tokens for Divergence Engine.` });
+    }
+
+    // Tool Enrichment: fetch live data before simulation
+    try {
+      const { enrichScenarioWithTools } = await import('../simulith/src/tools/ToolDecider.js');
+      logAutomation(req.user.uuid, 'enrichment', 'Analyzing query for relevant data sources...');
+      const enrichment = await enrichScenarioWithTools({
+        question: payload.question,
+        facts: payload.facts
+      });
+      if (enrichment?.facts?.length) {
+        payload._enriched = enrichment.tool;
+        payload._enrichedQuery = enrichment.query;
+        payload.facts = [...enrichment.facts, ...(payload.facts || [])];
+        logAutomation(req.user.uuid, 'enrichment', `Tool selected: ${enrichment.tool.toUpperCase()}`);
+        logAutomation(req.user.uuid, 'enrichment', `Generated query: "${enrichment.query}"`);
+        logAutomation(req.user.uuid, 'enrichment', `Retrieved ${enrichment.facts.length} fact(s).`);
+        for (const fact of enrichment.facts) {
+          logAutomation(req.user.uuid, 'enrichment', `[DATA] ${fact.slice(0, 200)}${fact.length > 200 ? '...' : ''}`);
+        }
+      } else {
+        logAutomation(req.user.uuid, 'enrichment', 'No relevant data sources found — proceeding with existing context.');
+      }
+    } catch (err) {
+      logAutomation(req.user.uuid, 'enrichment', `Tool enrichment failed: ${err.message}`);
+      console.warn('[Enrichment] Non-fatal:', err.message);
     }
 
     const token = extractToken(req);

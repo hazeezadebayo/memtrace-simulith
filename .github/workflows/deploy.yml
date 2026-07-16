@@ -116,6 +116,7 @@ jobs:
             LLM_RPM=${{ vars.LLM_RPM || '30' }}
             LLM_MAX_CONCURRENT=${{ vars.LLM_MAX_CONCURRENT || '2' }}
             ADMIN_EMAILS=${{ vars.ADMIN_EMAILS || 'hazeezadebayo@gmail.com' }}
+            ENRICHMENT_CHAR_LIMIT=${{ vars.ENRICHMENT_CHAR_LIMIT || '500' }}
             ENDENV
 
             echo ".env written"
