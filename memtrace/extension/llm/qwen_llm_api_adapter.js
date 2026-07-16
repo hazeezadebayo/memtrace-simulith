@@ -9,7 +9,7 @@ import { DEFAULT_CONFIG } from '../env/config.js';
  * Isolated call to Qwen's DashScope text-generation API.
  * Uses the compatible chat/completions endpoint.
  */
-export async function callQwen(apiKey, prompt, model = 'qwen-turbo', temperature = undefined, signal = undefined, systemMsg = undefined) {
+export async function callQwen(apiKey, prompt, model = 'qwen3-8b', temperature = undefined, signal = undefined, systemMsg = undefined) {
     console.log(`[Qwen Adapter] Calling ${model}...`);
 
     // dashscopeApiKey if provided, else fallback to standard apiKey in config

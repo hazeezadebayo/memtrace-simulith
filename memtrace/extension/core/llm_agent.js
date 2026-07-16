@@ -65,7 +65,7 @@ export async function callLLM(provider, apiKey, prompt, model = null, temperatur
     else if (activeProvider === 'openrouter') result = await callOpenRouter(key, prompt, targetModel || 'openai/gpt-oss-120b', temperature, signal, systemMsg);
     else if (activeProvider === 'qwen') {
       const { callQwen } = await import('../llm/qwen_llm_api_adapter.js');
-      result = await callQwen(key, prompt, targetModel || 'qwen-turbo', temperature, signal, systemMsg);
+      result = await callQwen(key, prompt, targetModel || 'qwen3-8b', temperature, signal, systemMsg);
     }
     else if (activeProvider === 'localllm') {
       result = await callLocalLLM(prompt, signal, systemMsg);
