@@ -115,6 +115,7 @@ jobs:
             MT_MAX_ROUNDS=${{ vars.MT_MAX_ROUNDS || '2' }}
             LLM_RPM=${{ vars.LLM_RPM || '30' }}
             LLM_MAX_CONCURRENT=${{ vars.LLM_MAX_CONCURRENT || '2' }}
+            ADMIN_EMAILS=${{ vars.ADMIN_EMAILS || 'hazeezadebayo@gmail.com' }}
             ENDENV
 
             echo ".env written"
