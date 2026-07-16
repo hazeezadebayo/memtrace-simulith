@@ -40,7 +40,7 @@ app.disable('x-powered-by');
 
 app.use((req, res, next) => {
     res.setHeader('Content-Security-Policy',
-        "default-src 'self'; script-src 'self' https://accounts.google.com https://static.cloudflareinsights.com 'unsafe-eval' 'wasm-unsafe-eval'; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://rsms.me https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://rsms.me https://fonts.gstatic.com; img-src 'self' data:; frame-src 'self' https://accounts.google.com; connect-src 'self' https://accounts.google.com"
+        "default-src 'self'; script-src 'self' https://accounts.google.com https://static.cloudflareinsights.com 'unsafe-eval' 'wasm-unsafe-eval' 'sha256-Lii2fvV3J2kPMLInxp3RZIRwKlAOHMUeOillR2DYg2Y='; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://rsms.me https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://rsms.me https://fonts.gstatic.com; img-src 'self' data:; frame-src 'self' https://accounts.google.com; connect-src 'self' https://accounts.google.com"
     );
     next();
 });
