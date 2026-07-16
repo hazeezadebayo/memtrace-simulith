@@ -40,7 +40,7 @@ app.disable('x-powered-by');
 
 app.use((req, res, next) => {
     res.setHeader('Content-Security-Policy',
-        "default-src 'self'; script-src 'self' https://accounts.google.com https://static.cloudflareinsights.com 'sha256-9BsbNuO7krRne1dsG+Ry3F9udkwJ8eW6+7HigWKcaN0=' 'sha256-IuGsjRApwdv/8kgOEGH6GZMAkItUlOjFydrGDid5xB0=' 'unsafe-eval' 'wasm-unsafe-eval' 'unsafe-hashes' 'sha256-WLzCiI2yteCyZbLgaCNn3XPydfIQ20rQdbTSUqiLmn4=' 'sha256-PTTvKcF/fgfONZZy8tj55rTxwAtYatlDF4LJ3qGuAAg=' 'sha256-x+PhJYx1PJ1Vm0IAKwcXco/hJmqAQ7VgeQtT6DbWvyI=' 'sha256-Lii2fvV3J2kPMLInxp3RZIRwKlAOHMUeOillR2DYg2Y='; style-src 'self' 'unsafe-inline' https://rsms.me https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://rsms.me https://fonts.gstatic.com; img-src 'self' data:; frame-src 'self' https://accounts.google.com; connect-src 'self' https://accounts.google.com"
+        "default-src 'self'; script-src 'self' https://accounts.google.com https://static.cloudflareinsights.com 'sha256-9BsbNuO7krRne1dsG+Ry3F9udkwJ8eW6+7HigWKcaN0=' 'sha256-IuGsjRApwdv/8kgOEGH6GZMAkItUlOjFydrGDid5xB0=' 'unsafe-eval' 'wasm-unsafe-eval' 'unsafe-hashes' 'sha256-WLzCiI2yteCyZbLgaCNn3XPydfIQ20rQdbTSUqiLmn4=' 'sha256-PTTvKcF/fgfONZZy8tj55rTxwAtYatlDF4LJ3qGuAAg=' 'sha256-x+PhJYx1PJ1Vm0IAKwcXco/hJmqAQ7VgeQtT6DbWvyI=' 'sha256-Lii2fvV3J2kPMLInxp3RZIRwKlAOHMUeOillR2DYg2Y=' 'sha256-IiQ91C3Bhmn06MvBAcgt9lsoClkjgVvhzbmY7yMIlPQ='; style-src 'self' 'unsafe-inline' https://rsms.me https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://rsms.me https://fonts.gstatic.com; img-src 'self' data:; frame-src 'self' https://accounts.google.com; connect-src 'self' https://accounts.google.com"
     );
     next();
 });
@@ -48,7 +48,7 @@ app.use((req, res, next) => {
 // === AUTHENTICATION ===
 app.use('/api/auth', authRouter);
 
-import memtraceModeRouter from './memtrace_mode_server.js';
+
 import telemetryRouter from './telemetry_server.js';
 import personaRouter from './persona_server.js';
 
@@ -56,7 +56,7 @@ app.use('/api/v4', councilRouter);
 app.use('/api/v4', meshRouter);
 app.use('/api/v4', treeRouter);
 app.use('/api/v4', simulithRouter);
-app.use('/api/v4', memtraceModeRouter);
+
 app.use('/api/v4', telemetryRouter);
 app.use('/api/v4', personaRouter);
 app.use('/api/v4/automation', automationRouter);
