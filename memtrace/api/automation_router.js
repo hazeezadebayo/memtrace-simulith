@@ -25,6 +25,33 @@ function extractToken(req) {
   return req.cookies?.auth_token || '';
 }
 
+async function enrichPayload(uuid, payload) {
+  try {
+    const { enrichScenarioWithTools } = await import('../simulith/src/tools/ToolDecider.js');
+    logAutomation(uuid, 'enrichment', 'Analyzing query for relevant data sources...');
+    const enrichment = await enrichScenarioWithTools({
+      question: payload.question,
+      facts: payload.facts
+    });
+    if (enrichment?.facts?.length) {
+      payload._enriched = enrichment.tool;
+      payload._enrichedQuery = enrichment.query;
+      payload.facts = [...enrichment.facts, ...(payload.facts || [])];
+      logAutomation(uuid, 'enrichment', `Tool selected: ${enrichment.tool.toUpperCase()}`);
+      logAutomation(uuid, 'enrichment', `Generated query: "${enrichment.query}"`);
+      logAutomation(uuid, 'enrichment', `Retrieved ${enrichment.facts.length} fact(s).`);
+      for (const fact of enrichment.facts) {
+        logAutomation(uuid, 'enrichment', `[DATA] ${fact.slice(0, 200)}${fact.length > 200 ? '...' : ''}`);
+      }
+    } else {
+      logAutomation(uuid, 'enrichment', 'No relevant data sources found — proceeding with existing context.');
+    }
+  } catch (err) {
+    logAutomation(uuid, 'enrichment', `Tool enrichment failed: ${err.message}`);
+    console.warn('[Enrichment] Non-fatal:', err.message);
+  }
+}
+
 // GET /api/v4/automation/status (Telemetry Polling)
 router.get('/status', authenticate, (req, res) => {
   res.json({
@@ -57,31 +84,7 @@ router.post('/router', authenticate, async (req, res) => {
       return res.status(402).json({ error: `Insufficient tokens for Router Mode.` });
     }
 
-    // Tool Enrichment: fetch live data before simulation
-    try {
-      const { enrichScenarioWithTools } = await import('../simulith/src/tools/ToolDecider.js');
-      logAutomation(req.user.uuid, 'enrichment', 'Analyzing query for relevant data sources...');
-      const enrichment = await enrichScenarioWithTools({
-        question: payload.question,
-        facts: payload.facts
-      });
-      if (enrichment?.facts?.length) {
-        payload._enriched = enrichment.tool;
-        payload._enrichedQuery = enrichment.query;
-        payload.facts = [...enrichment.facts, ...(payload.facts || [])];
-        logAutomation(req.user.uuid, 'enrichment', `Tool selected: ${enrichment.tool.toUpperCase()}`);
-        logAutomation(req.user.uuid, 'enrichment', `Generated query: "${enrichment.query}"`);
-        logAutomation(req.user.uuid, 'enrichment', `Retrieved ${enrichment.facts.length} fact(s).`);
-        for (const fact of enrichment.facts) {
-          logAutomation(req.user.uuid, 'enrichment', `[DATA] ${fact.slice(0, 200)}${fact.length > 200 ? '...' : ''}`);
-        }
-      } else {
-        logAutomation(req.user.uuid, 'enrichment', 'No relevant data sources found — proceeding with existing context.');
-      }
-    } catch (err) {
-      logAutomation(req.user.uuid, 'enrichment', `Tool enrichment failed: ${err.message}`);
-      console.warn('[Enrichment] Non-fatal:', err.message);
-    }
+    await enrichPayload(req.user.uuid, payload);
 
     const token = extractToken(req);
     const baseUrl = getBaseUrl(req);
@@ -165,31 +168,7 @@ router.post('/divergence', authenticate, async (req, res) => {
       return res.status(402).json({ error: `Insufficient tokens for Divergence Engine.` });
     }
 
-    // Tool Enrichment: fetch live data before simulation
-    try {
-      const { enrichScenarioWithTools } = await import('../simulith/src/tools/ToolDecider.js');
-      logAutomation(req.user.uuid, 'enrichment', 'Analyzing query for relevant data sources...');
-      const enrichment = await enrichScenarioWithTools({
-        question: payload.question,
-        facts: payload.facts
-      });
-      if (enrichment?.facts?.length) {
-        payload._enriched = enrichment.tool;
-        payload._enrichedQuery = enrichment.query;
-        payload.facts = [...enrichment.facts, ...(payload.facts || [])];
-        logAutomation(req.user.uuid, 'enrichment', `Tool selected: ${enrichment.tool.toUpperCase()}`);
-        logAutomation(req.user.uuid, 'enrichment', `Generated query: "${enrichment.query}"`);
-        logAutomation(req.user.uuid, 'enrichment', `Retrieved ${enrichment.facts.length} fact(s).`);
-        for (const fact of enrichment.facts) {
-          logAutomation(req.user.uuid, 'enrichment', `[DATA] ${fact.slice(0, 200)}${fact.length > 200 ? '...' : ''}`);
-        }
-      } else {
-        logAutomation(req.user.uuid, 'enrichment', 'No relevant data sources found — proceeding with existing context.');
-      }
-    } catch (err) {
-      logAutomation(req.user.uuid, 'enrichment', `Tool enrichment failed: ${err.message}`);
-      console.warn('[Enrichment] Non-fatal:', err.message);
-    }
+    await enrichPayload(req.user.uuid, payload);
 
     const token = extractToken(req);
     const baseUrl = getBaseUrl(req);
