@@ -1,7 +1,7 @@
 import { callLLM } from '../llm/ai.js';
 import { DEFAULT_CONFIG } from '../../../extension/env/config.js';
 import { getEmbedding, cosineSimilarity } from '../../../extension/llm/embedding.js';
-import { runCouncil, runMesh, runTree, setAutomationState, logAutomation, clearAutomationLogs, isCancellationError } from './utils.js';
+import { runCouncil, runMesh, runTree, setAutomationState, logAutomation, clearAutomationLogs, getAutomationLogs, isCancellationError } from './utils.js';
 
 /**
  * Step-by-step decision tree prompt.
@@ -148,7 +148,9 @@ export async function routeQuery(baseUrl, token, payload, signal) {
   // If caller explicitly specified a mode, skip LLM classification
   const explicitMode = payload.mode?.toLowerCase();
   if (explicitMode && ['council', 'mesh', 'tree'].includes(explicitMode)) {
+    const priorLogs = getAutomationLogs(payload.uuid);
     clearAutomationLogs(payload.uuid);
+    priorLogs.forEach(l => logAutomation(payload.uuid, l.stage, l.message, l.details));
     logAutomation(payload.uuid, 'router', `Manual mode selected: ${explicitMode}`);
     setAutomationState(payload.uuid, `RUNNING ${explicitMode.toUpperCase()}...`);
     const simulateFn = explicitMode === 'mesh' ? runMesh : explicitMode === 'tree' ? runTree : runCouncil;
@@ -161,7 +163,9 @@ export async function routeQuery(baseUrl, token, payload, signal) {
     };
   }
 
+  const priorLogs = getAutomationLogs(payload.uuid);
   clearAutomationLogs(payload.uuid);
+  priorLogs.forEach(l => logAutomation(payload.uuid, l.stage, l.message, l.details));
   logAutomation(payload.uuid, 'router', 'Evaluating domain classification...');
 
   const prompt = ROUTER_PROMPT.replace('{QUERY}', query);

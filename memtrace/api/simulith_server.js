@@ -25,6 +25,11 @@ export const queue = new JobQueue({
   backoffMs: 500,
   processJob: async (payload, emit, job) => {
     resetLLMCallCount();
+    if (payload._enrichmentLogs?.length) {
+      for (const l of payload._enrichmentLogs) {
+        emit(l.stage, l.message);
+      }
+    }
     try {
       if (payload.type === 'resimulate') {
         const state = await loadState(payload.uuid);
@@ -93,9 +98,52 @@ export const queue = new JobQueue({
         );
 
         run.branches[branchIndex] = scoredBranch;
+        run.branches.sort((a, b) => b.score - a.score);
+
+        const { callLLM, parseJson } = await import('../simulith/src/llm/ai.js');
+        emit('Resimulation', 'Updating counterfactual consequence for modified branch...');
+        const cfPrompt = `
+          <instructions>
+          Perform a rigorous counterfactual stress-test.
+          Output EXACTLY ONE JSON object.
+          Q: ${run.scenario.question.substring(0, 120)}
+          Branch: ${scoredBranch.title}
+          Action: ${scoredBranch.action}
+          </instructions>
+          {"ifWrongConsequence":"1 precise sentence describing the downside"}
+        `;
+        const cfResult = await callLLM(cfPrompt, 0.7);
+        if (cfResult) {
+          const parsedCf = parseJson(cfResult);
+          if (parsedCf && parsedCf.ifWrongConsequence && run.counterfactuals && run.counterfactuals.branchConsequences) {
+            const cfIndex = run.counterfactuals.branchConsequences.findIndex(c => c.branchId === branchId);
+            if (cfIndex >= 0) {
+              run.counterfactuals.branchConsequences[cfIndex].title = scoredBranch.title;
+              run.counterfactuals.branchConsequences[cfIndex].ifWrongConsequence = parsedCf.ifWrongConsequence;
+            }
+          }
+        }
+
+        if (run.branches[0].id === scoredBranch.id) {
+          const { generateExecutiveBrief } = await import('../simulith/src/agents/generative.js');
+          emit('Resimulation', 'Drafting updated executive brief for top recommendation...');
+          const brief = await generateExecutiveBrief(run.scenario, scoredBranch, emit);
+          run.recommendation = {
+            branchId: scoredBranch.id,
+            title: scoredBranch.title,
+            reason: brief.executiveBrief || (scoredBranch.why && scoredBranch.why.join(' ')) || 'Updated reason based on new evidence.',
+            whatWouldChangeMyMind: brief.councilalFactor || 'Need stronger evidence.'
+          };
+        }
+
         await saveState(payload.uuid, state);
         
-        return { updatedBranch: scoredBranch };
+        return { 
+          updatedBranch: scoredBranch,
+          recommendation: run.recommendation,
+          counterfactuals: run.counterfactuals,
+          allBranches: run.branches
+        };
       }
 
       let facts = payload.facts || [];

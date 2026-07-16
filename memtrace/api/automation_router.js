@@ -26,9 +26,10 @@ function extractToken(req) {
 }
 
 async function enrichPayload(uuid, payload) {
+  const logs = [];
   try {
     const { enrichScenarioWithTools } = await import('../simulith/src/tools/ToolDecider.js');
-    logAutomation(uuid, 'enrichment', 'Analyzing query for relevant data sources...');
+    logs.push({ stage: 'enrichment', message: 'Analyzing query for relevant data sources...' });
     const enrichment = await enrichScenarioWithTools({
       question: payload.question,
       facts: payload.facts
@@ -37,19 +38,23 @@ async function enrichPayload(uuid, payload) {
       payload._enriched = enrichment.tool;
       payload._enrichedQuery = enrichment.query;
       payload.facts = [...enrichment.facts, ...(payload.facts || [])];
-      logAutomation(uuid, 'enrichment', `Tool selected: ${enrichment.tool.toUpperCase()}`);
-      logAutomation(uuid, 'enrichment', `Generated query: "${enrichment.query}"`);
-      logAutomation(uuid, 'enrichment', `Retrieved ${enrichment.facts.length} fact(s).`);
+      logs.push({ stage: 'enrichment', message: `Tool selected: ${enrichment.tool.toUpperCase()}` });
+      logs.push({ stage: 'enrichment', message: `Generated query: "${enrichment.query}"` });
+      logs.push({ stage: 'enrichment', message: `Retrieved ${enrichment.facts.length} fact(s).` });
       for (const fact of enrichment.facts) {
-        logAutomation(uuid, 'enrichment', `[DATA] ${fact.slice(0, 200)}${fact.length > 200 ? '...' : ''}`);
+        logs.push({ stage: 'enrichment', message: `[DATA] ${fact.slice(0, 200)}${fact.length > 200 ? '...' : ''}` });
       }
     } else {
-      logAutomation(uuid, 'enrichment', 'No relevant data sources found — proceeding with existing context.');
+      logs.push({ stage: 'enrichment', message: 'No relevant data sources found — proceeding with existing context.' });
     }
   } catch (err) {
-    logAutomation(uuid, 'enrichment', `Tool enrichment failed: ${err.message}`);
+    logs.push({ stage: 'enrichment', message: `Tool enrichment failed: ${err.message}` });
     console.warn('[Enrichment] Non-fatal:', err.message);
   }
+  for (const l of logs) {
+    logAutomation(uuid, l.stage, l.message);
+  }
+  payload._enrichmentLogs = (payload._enrichmentLogs || []).concat(logs);
 }
 
 // GET /api/v4/automation/status (Telemetry Polling)

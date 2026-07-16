@@ -2074,10 +2074,16 @@ async function runRouterScenario() {
           const finalResult = await pollJob(resJob.jobId, '/api/v4/jobs');
           logConsole('RESIMULATION COMPLETE.', 'success');
           
-          const updated = finalResult.updatedBranch || finalResult;
-          const bIndex = simResult.branches.findIndex(b => b.id === branchId);
-          if (bIndex >= 0) {
-              simResult.branches[bIndex] = updated;
+          if (finalResult.recommendation) simResult.recommendation = finalResult.recommendation;
+          if (finalResult.counterfactuals) simResult.counterfactuals = finalResult.counterfactuals;
+          if (finalResult.allBranches) {
+            simResult.branches = finalResult.allBranches;
+          } else {
+            const updated = finalResult.updatedBranch || finalResult;
+            const bIndex = simResult.branches.findIndex(b => b.id === branchId);
+            if (bIndex >= 0) {
+                simResult.branches[bIndex] = updated;
+            }
           }
           await rerender(simResult);
         } catch (err) {
@@ -2181,10 +2187,16 @@ function switchDivergenceTab(tabName, rawResults) {
           logConsole('RESIMULATION COMPLETE.', 'success');
           
           // Update cached results and switch tab to update view
-          const updated = finalResult.updatedBranch || finalResult;
-          const bIndex = councilResult.branches.findIndex(b => b.id === branchId);
-          if (bIndex >= 0) {
-              councilResult.branches[bIndex] = updated;
+          if (finalResult.recommendation) councilResult.recommendation = finalResult.recommendation;
+          if (finalResult.counterfactuals) councilResult.counterfactuals = finalResult.counterfactuals;
+          if (finalResult.allBranches) {
+            councilResult.branches = finalResult.allBranches;
+          } else {
+            const updated = finalResult.updatedBranch || finalResult;
+            const bIndex = councilResult.branches.findIndex(b => b.id === branchId);
+            if (bIndex >= 0) {
+                councilResult.branches[bIndex] = updated;
+            }
           }
           rawResults.council = councilResult;
           switchDivergenceTab('council', rawResults);

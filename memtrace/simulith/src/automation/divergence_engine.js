@@ -1,7 +1,7 @@
 import { buildDivergenceSynthesisPrompt } from '../llm/prompts.js';
 import { callLLMWithSystem, REPORT_SYSTEM_PROMPT } from '../llm/ai.js';
 import { DEFAULT_CONFIG } from '../../../extension/env/config.js';
-import { runCouncil, runMesh, runTree, setAutomationState, logAutomation, clearAutomationLogs, isCancellationError } from './utils.js';
+import { runCouncil, runMesh, runTree, setAutomationState, logAutomation, clearAutomationLogs, getAutomationLogs, isCancellationError } from './utils.js';
 
 export async function runDivergenceAnalysis(baseUrl, token, payload, runSequentially = true, signal) {
   const query = payload.question || payload.decision || '';
@@ -10,7 +10,9 @@ export async function runDivergenceAnalysis(baseUrl, token, payload, runSequenti
   // Propagate abort immediately if already cancelled
   if (signal?.aborted) throw new Error('Simulation Cancelled by user.');
 
+  const priorLogs = getAutomationLogs(payload.uuid);
   clearAutomationLogs(payload.uuid);
+  priorLogs.forEach(l => logAutomation(payload.uuid, l.stage, l.message, l.details));
   logAutomation(payload.uuid, 'divergence', 'Starting reality divergence analysis...');
 
   console.log(`[Divergence Engine] Starting divergence analysis (Sequential: ${runSequentially})`);
