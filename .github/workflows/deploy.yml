@@ -169,7 +169,7 @@ jobs:
             # ── Health check ─────────────────────────────────────────
             echo "Waiting for health check..."
             for i in $(seq 1 30); do
-              STATUS=$(curl -s http://localhost:3106/health 2>/dev/null || echo "")
+              STATUS=$(curl -s http://localhost:3000/health 2>/dev/null || echo "")
               if echo "$STATUS" | grep -q '"ok"'; then
                 echo "✅ Health check passed ($((i * 2))s)"
                 exit 0
