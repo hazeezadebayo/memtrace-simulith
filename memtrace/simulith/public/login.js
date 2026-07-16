@@ -27,12 +27,16 @@ function initGoogleAuth(retries = 10) {
         return;
     }
     let tokenClient;
-    document.getElementById('customGoogleBtn').addEventListener('click', () => {
+    let popupOpen = false;
+    const btn = document.getElementById('customGoogleBtn');
+    btn.addEventListener('click', () => {
+        if (popupOpen) return;
         if (!tokenClient) {
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: '624961239870-bu25msh0hsbki5c14cca9ucudacu17ge.apps.googleusercontent.com',
                 scope: 'openid email profile',
                 callback: (response) => {
+                    popupOpen = false;
                     if (response.error) {
                         alert('Login failed: ' + response.error);
                         return;
@@ -40,11 +44,14 @@ function initGoogleAuth(retries = 10) {
                     sendIdTokenToBackend(response.id_token);
                 },
                 error_callback: (error) => {
+                    popupOpen = false;
+                    if (error.type === 'popup_closed') return;
                     console.error('Google OAuth error:', error);
                     alert('Authentication error: ' + (error.message || 'Unknown error'));
                 }
             });
         }
+        popupOpen = true;
         tokenClient.requestAccessToken();
     });
 }
