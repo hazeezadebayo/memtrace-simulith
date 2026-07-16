@@ -100,7 +100,7 @@ export async function enrichScenarioWithTools({ question, facts }) {
   if (formattedFacts.length === 0) return null;
 
   const charLimit = DEFAULT_CONFIG.promptLimits.enrichmentCharLimit || 500;
-  const facts = formattedFacts.map(f =>
+  const truncatedFacts = formattedFacts.map(f =>
     f.length > charLimit ? f.slice(0, charLimit) + '...' : f
   );
 
@@ -108,6 +108,6 @@ export async function enrichScenarioWithTools({ question, facts }) {
     tool: decision.tool,
     query: decision.query,
     reasoning: decision.reasoning,
-    facts
+    facts: truncatedFacts
   };
 }
