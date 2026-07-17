@@ -963,14 +963,17 @@ function renderResults(result) {
             What future would most likely happen if the user is wrong?
           </div>
           <div style="overflow-y:auto; padding-right:0.25rem; flex: 1;">
-            ${(result.counterfactuals?.branchConsequences || []).map(c => `
+            ${(result.counterfactuals?.branchConsequences || []).map(c => {
+              if (!c) return '';
+              return `
               <div style="margin-bottom:1rem; padding-bottom:1rem; border-bottom:1px solid #EEE;">
                 <div style="font-weight:bold; color:var(--text-dark); margin-bottom:0.3rem;">If you ${(c.title || 'N/A').toLowerCase()} and are wrong:</div>
                 <ul style="margin:0; padding-left:1.2rem; font-size:0.9rem; color:var(--text-secondary); list-style-type: '→ ';">
                   ${(c.ifWrongConsequence || 'No data provided.').split('\\n').filter(Boolean).map(l => `<li>${l.replace(/^[-*•]\\s*/, '')}</li>`).join('')}
                 </ul>
               </div>
-            `).join('')}
+              `;
+            }).join('')}
           </div>
         </div>
         
