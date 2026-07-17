@@ -24,9 +24,11 @@ MemTrace is a Universal Mesh Intelligence and Scenario Decision Simulator. It in
 *   **Counterfactual ID Mismatch Fix**: Resolved an ID mismatch bug where the initial simulation created counterfactual consequence IDs as `branch_1`, `branch_2`, etc., but the resimulation pipeline searched for them using original branch IDs like `gen-branch-1`. Corrected `generative.js` to preserve the original branch ID, allowing the counterfactual consequence for the resimulated branch to correctly update.
 *   **Recommendation Re-drafting on Resimulation**: Fixed an issue where the strategic recommendation/executive brief was only updated if the resimulated branch was the top branch before resimulation. The recommendation is now dynamically re-drafted whenever the top branch changes or the current top branch is resimulated.
 *   **Counterfactual Summary Update**: Added an LLM call during branch resimulation to re-evaluate the overall counterfactual summaries (`mostExpensiveAssumption` and `mostSurvivableFailure`) to keep them fully aligned with the updated branch states.
+*   **Counterfactual Engine Persistence Fix**: Fixed a bug in `api/simulith_server.js` where the `counterfactuals` property of the simulation results was not persisted to the run object inside `state.runs` during the initial simulation run. This left the `counterfactuals` field `undefined` inside the database, causing subsequent resimulations to lose all `branchConsequences` and break the rendering of the Counterfactual Engine section in the UI. Added self-healing logic to reconstruct consequences if they are missing.
+*   **Persistent Event Listeners on Rerender**: Resolved an issue in `app.js` where the `rerender` function did not bind the click event listeners for the "RE-SIMULATE" buttons. This caused all re-simulate buttons to become completely unclickable after the first resimulation finished and triggered a rerender. Re-bound the listeners in `rerender` using the correct dynamic run parameters.
 
 ## Currently In Progress
-*   Verifying final resimulation behaviors and log telemetry on the remote container.
+*   Monitoring production container telemetry for any potential anomalies.
 
 ## Remains to be Done
 *   Implement advanced edge traversal pruning if the FTS5 pool becomes overly polluted.
