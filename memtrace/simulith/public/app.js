@@ -2468,13 +2468,29 @@ function startTelemetryTimer() {
                 } else if (log.details.round !== undefined) {
                   currentTelemetry.currentTick = log.details.round;
                 }
-                if (log.details.edgesCount !== undefined) {
-                  const nodes = log.details.nodesCount || 0;
-                  const schemas = log.details.schemaTypes?.length || 0;
-                  currentTelemetry.graphDensity = `${log.details.edgesCount} relations / ${nodes} nodes (${schemas} schemas)`;
+                // Fix 1: persist nodes/schemas from the one-time 'graph' emit so
+                // subsequent round_end updates (which only carry edgesCount) don't
+                // overwrite them with 0.
+                if (log.details.nodes !== undefined) {
+                  currentTelemetry._nodesCount = log.details.nodes;
                 }
                 if (log.details.schemaTypes && log.details.schemaTypes.length > 0) {
+                  currentTelemetry._schemaTypesCount = log.details.schemaTypes.length;
                   currentTelemetry.activeSchema = log.details.schemaTypes.join(', ');
+                }
+                if (log.details.edgesCount !== undefined) {
+                  const nodes = currentTelemetry._nodesCount || log.details.nodesCount || 0;
+                  const schemas = currentTelemetry._schemaTypesCount || log.details.schemaTypes?.length || 0;
+                  currentTelemetry.graphDensity = `${log.details.edgesCount} relations / ${nodes} nodes (${schemas} schemas)`;
+                }
+                // Fix 2: populate durations from round_end logs so the ROUND DURATIONS
+                // panel shows real data instead of "None completed yet."
+                if (log.stage === 'round_end' && log.details.duration !== undefined) {
+                  const roundNum = log.details.round || (currentTelemetry.durations.length + 1);
+                  const label = `Round ${roundNum}`;
+                  if (!currentTelemetry.durations.some(d => d.label === label)) {
+                    currentTelemetry.durations.push({ label, duration: log.details.duration });
+                  }
                 }
               }
             }
