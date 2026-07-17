@@ -35,3 +35,12 @@ Time:        15.59 s, estimated 16 s
 Ran all test suites.
 Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?
 Exit code: 0
+
+$ git commit -m "fix: cache busting & defensive rendering checks in Council resimulations"
+[main fb33834] fix: cache busting & defensive rendering checks in Council resimulations
+ 6 files changed, 139 insertions(+), 18 deletions(-)
+ create mode 100644 memtrace/git_workflow.md
+
+$ git push
+To github.com:hazeezadebayo/memtrace-simulith.git
+   455705c..fb33834  main -> main
