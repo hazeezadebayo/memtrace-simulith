@@ -575,6 +575,7 @@ function setMode(mode) {
   const treeParams = document.getElementById('tree-params');
   const treeLaunchBtn = document.getElementById('tree-launch-btn');
   const councilParams = document.getElementById('council-params');
+  const divergenceParams = document.getElementById('divergence-params');
 
   if (mode === 'tree') {
     if (resultsDiv) resultsDiv.style.display = 'none';
@@ -585,6 +586,7 @@ function setMode(mode) {
     if (treeParams) treeParams.classList.add('visible');
     if (councilParams) councilParams.classList.add('hidden');
     if (meshParamsDiv) meshParamsDiv.classList.remove('visible');
+    if (divergenceParams) divergenceParams.style.display = 'none';
     if (treeLaunchBtn) treeLaunchBtn.style.display = 'block';
     const btnRun = document.getElementById('btn-run');
     if (btnRun) btnRun.style.display = 'none';
@@ -690,7 +692,6 @@ function setMode(mode) {
 
   meshParamsDiv.classList.toggle('visible', mode === 'mesh');
   document.getElementById('council-params')?.classList.toggle('hidden', mode !== 'council');
-  const divergenceParams = document.getElementById('divergence-params');
   if (divergenceParams) divergenceParams.style.display = (mode === 'divergence' || mode === 'router') ? 'block' : 'none';
 
   const hasResults = results.querySelector('.branch-card') || results.querySelector('.winner') || feedScroller.querySelector('.feed-post') || (currentPollJobId !== null);
