@@ -143,12 +143,17 @@ export const queue = new JobQueue({
         }
 
         await saveState(payload.uuid, state);
+
+        // Debug: log any undefined slots in the branches array before returning
+        run.branches.forEach((b, i) => {
+          if (!b) console.error(`[RESIMULATE] CRITICAL: run.branches[${i}] is undefined after scoring. branchId=${branchId}`);
+        });
         
         return { 
           updatedBranch: scoredBranch,
           recommendation: run.recommendation,
           counterfactuals: run.counterfactuals,
-          allBranches: run.branches
+          allBranches: run.branches.filter(Boolean)
         };
       }
 

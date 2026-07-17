@@ -938,7 +938,12 @@ function renderBranch(branch) {
 }
 
 function renderResults(result) {
-  const branches = (result.branches || []).map(renderBranch).join('');
+  const rawBranches = result.branches || [];
+  const validBranches = rawBranches.filter((b, i) => {
+    if (!b) { console.error(`[renderResults] branch at index ${i} is undefined/null — skipping render.`); return false; }
+    return true;
+  });
+  const branches = validBranches.map(renderBranch).join('');
   const facts = (result.scenario?.facts || []).map(f => `<li>${f}</li>`).join('');
   return `
     <div class="card winner stagger-enter">
