@@ -6,6 +6,7 @@ import { getUser } from './db_users.js';
 import { getLLMCallCount, resetLLMCallCount, checkInjectionGuardrail } from '../extension/core/llm_agent.js';
 import { safeNumber, orchestratorConfig } from './simulith_server.js';
 import { DEFAULT_CONFIG } from '../extension/env/config.js';
+import { logAutomation } from '../simulith/src/automation/utils.js';
 
 const router = express.Router();
 router.use(enforceOrigin);
@@ -38,10 +39,17 @@ router.post('/simulate/mesh', authenticate, async (req, res) => {
       backoffMs: 500,
       processJob: async (p, emit, job) => {
         resetLLMCallCount();
+        // Bridge: forward every emit into globalAutomationLogs so the telemetry
+        // poller (/api/v4/automation/status) can deliver nodes, round durations,
+        // etc. to the client — the original emit only writes to job.logs.
+        const bridgedEmit = (stage, message, details = {}) => {
+          emit(stage, message, details);
+          logAutomation(payload.uuid, stage, message, details);
+        };
         try {
           const { loadState } = await import('../simulith/src/utils/council_utils.js');
           const state = await loadState(payload.uuid);
-          return await simulateMesh({ ...p, customPersonas: state.customPersonas || [], isCancelled: () => job.status === 'cancelled' }, emit);
+          return await simulateMesh({ ...p, customPersonas: state.customPersonas || [], isCancelled: () => job.status === 'cancelled' }, bridgedEmit);
         } catch (err) {
           if (err.message !== 'Simulation Cancelled by user.') {
             console.error('\n================================================================');
