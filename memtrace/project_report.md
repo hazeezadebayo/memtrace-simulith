@@ -16,6 +16,8 @@ MemTrace is a Universal Mesh Intelligence and Scenario Decision Simulator. It in
 *   **Extension ID Synchronization & Search Recovery**: Fixed the "no match found" search error. Configured the Extension popup's initialization to detect the extension environment and prepend the explicit `API_BASE` (`http://localhost:3106`).
 *   **Auth Cookie Passthrough**: Included `credentials: 'include'` in `/api/auth/me` fetches so the extension pulls the correct `req.user.uuid` matching the ingestion pipeline, restoring chunk visibility in the Files tab and allowing RAG searches to succeed.
 *   **Recompiled Assets**: Generated the updated `popup.bundle.js` payload.
+*   **API Error Masking Bug**: Fixed a bug in `simulith/public/app.js` where `INSUFFICIENT_TOKENS` (HTTP 402) errors were being intercepted by their own try/catch blocks because the `throw` statement was nested inside the `try` block intended for JSON parsing. Moved the status check outside the block to accurately reflect Gateway/Token errors.
+*   **Branch Resimulation Rank Corruption**: Repaired a desynchronization bug in `api/simulith_server.js` where resimulating a branch broke the UI by passing an isolated `length=1` array to the `scoreBranches` heuristic, automatically assigning it `rank: best`. The rescored branch is now placed back into the complete list *before* evaluation to correctly update relative rankings for all branches without overriding them.
 
 ## Currently In Progress
 *   End-to-End simulation testing across simulated agents in Council mode.

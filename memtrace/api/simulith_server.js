@@ -87,18 +87,17 @@ export const queue = new JobQueue({
           }
         }
 
-        emit('Resimulation', 'Re-scoring branch with updated consensus...');
-        const [scoredBranch] = scoreBranches(
-          [mergedBranch], 
+        emit('Resimulation', 'Re-scoring branches with updated consensus...');
+        run.branches[branchIndex] = mergedBranch;
+        run.branches = scoreBranches(
+          run.branches, 
           run.scenario, 
           runEvidence, 
           run.contradictionGraph || { items: [] }, 
           runPersonas, 
           run.settings
         );
-
-        run.branches[branchIndex] = scoredBranch;
-        run.branches.sort((a, b) => b.score - a.score);
+        const scoredBranch = run.branches.find(b => b.id === branchId);
 
         const { callLLM, parseJson } = await import('../simulith/src/llm/ai.js');
         emit('Resimulation', 'Updating counterfactual consequence for modified branch...');

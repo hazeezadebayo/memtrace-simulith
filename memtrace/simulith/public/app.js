@@ -1660,10 +1660,10 @@ async function runCouncilScenario() {
     try {
       const errorData = await res.json();
       errorMessage = errorData.error || errorMessage;
-      if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${errorMessage}`);
     } catch(e) {
       errorMessage = `Gateway Error: ${res.status} ${res.statusText}`;
     }
+    if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${errorMessage}`);
     throw new Error(errorMessage);
   }
   const data = await res.json();
@@ -1695,10 +1695,10 @@ async function runMeshScenario() {
     try {
       const errorData = await res.json();
       errorMessage = errorData.error || errorMessage;
-      if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${errorMessage}`);
     } catch(e) {
       errorMessage = `Gateway Error: ${res.status} ${res.statusText}`;
     }
+    if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${errorMessage}`);
     throw new Error(errorMessage);
   }
   const data = await res.json();
@@ -1826,10 +1826,10 @@ async function runRouterScenario() {
     try {
       const errorData = await res.json();
       errorMessage = errorData.error || errorMessage;
-      if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${errorMessage}`);
     } catch(e) {
       errorMessage = `Gateway Error: ${res.status} ${res.statusText}`;
     }
+    if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${errorMessage}`);
     throw new Error(errorMessage);
   }
   
@@ -2232,10 +2232,10 @@ async function runDivergenceScenario() {
     try {
       const errorData = await res.json();
       errorMessage = errorData.error || errorMessage;
-      if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${errorMessage}`);
     } catch(e) {
       errorMessage = `Gateway Error: ${res.status} ${res.statusText}`;
     }
+    if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${errorMessage}`);
     throw new Error(errorMessage);
   }
   
@@ -3478,10 +3478,10 @@ async function _treeLaunch() {
       try {
         const errorData = await res.json();
         errorMessage = errorData.error || errorMessage;
-        if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${errorMessage}`);
       } catch(e) {
         errorMessage = `Gateway Error: ${res.status} ${res.statusText}`;
       }
+      if (res.status === 402) throw new Error(`INSUFFICIENT_TOKENS: ${errorMessage}`);
       throw new Error(errorMessage);
     }
 
