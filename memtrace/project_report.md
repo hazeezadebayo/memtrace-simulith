@@ -19,9 +19,11 @@ MemTrace is a Universal Mesh Intelligence and Scenario Decision Simulator. It in
 *   **API Error Masking Bug**: Fixed a bug in `simulith/public/app.js` where `INSUFFICIENT_TOKENS` (HTTP 402) errors were being intercepted by their own try/catch blocks because the `throw` statement was nested inside the `try` block intended for JSON parsing. Moved the status check outside the block to accurately reflect Gateway/Token errors.
 *   **Branch Resimulation Rank Corruption**: Repaired a desynchronization bug in `api/simulith_server.js` where resimulating a branch broke the UI by passing an isolated `length=1` array to the `scoreBranches` heuristic, automatically assigning it `rank: best`. The rescored branch is now placed back into the complete list *before* evaluation to correctly update relative rankings for all branches without overriding them.
 *   **Resimulation Branch Database Data Loss**: Fixed a severe structural bug in `api/simulith_server.js` where the engine was aggressively stripping `description`, `action`, and `objections` from the branches before persisting them to `state.runs`. This resulted in the LLM hallucinating during resimulations (because it received `undefined` for those properties) and caused the frontend sibling branches to be destroyed when the UI requested the re-scored branch array back. The backend now accurately saves and persists the full structural branch objects into the SQLite cache.
+*   **Client-Side Cache Busting**: Resolved a critical issue where the browser executed an outdated, cached version of `app.js` (loaded as `?v=4`), causing the resimulation pipeline to throw errors like `can't access property "evidenceLinks", branch is undefined`. Bumped the script reference to `?v=7` in `workspace.html` to force browsers to fetch the updated code.
+*   **Defensive Rendering Safeguards**: Hardened `renderBranch` and `renderResults` in `app.js` with comprehensive checks for null or undefined branches, reactions, and objections, ensuring stable UI transitions during asynchronous resimulations.
 
 ## Currently In Progress
-*   End-to-End simulation testing across simulated agents in Council mode.
+*   Monitoring remote deployment logs for any edge-case branch synchronization issues.
 
 ## Remains to be Done
 *   Implement advanced edge traversal pruning if the FTS5 pool becomes overly polluted.

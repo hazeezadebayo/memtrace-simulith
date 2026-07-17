@@ -896,17 +896,28 @@ async function pollJob(jobId, endpoint = '/api/v4/jobs') {
 // ── Council renderers ──────────────────────────────────────────────────
 function renderBranch(branch) {
   if (!branch) return '';
-  const evidence = (branch.evidenceLinks || []).map(i => `<span class="chip">${i.title || i.id}</span>`).join('');
-  const reactions = (branch.reaction || []).map(i => `
-    <div style="margin-bottom:8px">
-      <div style="font-family:var(--font-mono);font-size:.75rem;">
-        <strong>${i.name}:</strong> 
-        <span style="color:${i.stance === 'support' ? 'var(--accent-green)' : i.stance === 'push back' ? 'var(--accent-orange)' : 'var(--text-secondary)'}; font-weight:bold;">${i.stance.toUpperCase()}</span>
+  const evidence = (branch.evidenceLinks || []).map(i => {
+    if (!i) return '';
+    return `<span class="chip">${i.title || i.id}</span>`;
+  }).join('');
+  const reactions = (branch.reaction || []).map(i => {
+    if (!i) return '';
+    const stance = i.stance || 'undecided';
+    const stanceColor = stance === 'support' ? 'var(--accent-green)' : (stance === 'push back' || stance === 'pushback') ? 'var(--accent-orange)' : 'var(--text-secondary)';
+    return `
+      <div style="margin-bottom:8px">
+        <div style="font-family:var(--font-mono);font-size:.75rem;">
+          <strong>${i.name || 'Agent'}:</strong> 
+          <span style="color:${stanceColor}; font-weight:bold;">${stance.toUpperCase()}</span>
+        </div>
+        ${i.text ? `<div style="font-size:.8rem; color:var(--text-secondary); margin-top:3px; line-height:1.3;">"${i.text}"</div>` : ''}
       </div>
-      ${i.text ? `<div style="font-size:.8rem; color:var(--text-secondary); margin-top:3px; line-height:1.3;">"${i.text}"</div>` : ''}
-    </div>
-  `).join('');
-  const objections = (branch.objections || []).map(i => `<li>${i}</li>`).join('');
+    `;
+  }).join('');
+  const objections = (branch.objections || []).map(i => {
+    if (!i) return '';
+    return `<li>${i}</li>`;
+  }).join('');
   return `
     <div class="card branch-card stagger-enter ${branch.rank === 'best' ? 'winner' : ''}" data-branch-id="${branch.id}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem">

@@ -122,14 +122,27 @@ test('DELETE /api/v4/jobs/:id — cancel own job', async () => {
   expect(delRes.status).toBe(200);
 });
 
-test('POST /api/v4/runs/:id/branches/:branchId/resimulate — resimulate branch', async () => {
-  if (!runId || !branchId) return;
-  const res = await request.post(`/api/v4/runs/${runId}/branches/${branchId}/resimulate`)
+test('POST /api/v4/runs/:id/branches/:branchId/resimulate — sequential resimulation of multiple branches', async () => {
+  if (!runId) return;
+  const res1 = await request.post(`/api/v4/runs/${runId}/branches/gen-branch-1/resimulate`)
     .set(h1())
-    .send({ newEvidence: 'The market has shifted dramatically.' });
-  expect(res.status).toBe(202);
-  expect(res.body).toHaveProperty('jobId');
+    .send({ newEvidence: 'First resimulation evidence.' });
+  expect(res1.status).toBe(202);
+  expect(res1.body).toHaveProperty('jobId');
+  const result1 = await pollJob(res1.body.jobId, h1());
+  expect(result1).toBeTruthy();
+  expect(result1.allBranches).toBeDefined();
+
+  // Try second sequential resimulation
+  const res2 = await request.post(`/api/v4/runs/${runId}/branches/gen-branch-2/resimulate`)
+    .set(h1())
+    .send({ newEvidence: 'Second resimulation evidence.' });
+  expect(res2.status).toBe(202);
+  expect(res2.body).toHaveProperty('jobId');
+  const result2 = await pollJob(res2.body.jobId, h1());
+  expect(result2).toBeTruthy();
 });
+
 
 test('POST /api/v4/runs/:id/branches/:branchId/resimulate — 400 missing newEvidence', async () => {
   if (!runId || !branchId) return;
