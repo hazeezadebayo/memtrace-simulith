@@ -197,7 +197,15 @@ app.use('/simulith', (req, res, next) => {
     } else {
         next();
     }
-}, express.static(path.join(__dirname, '..', 'simulith', 'public')));
+}, express.static(path.join(__dirname, '..', 'simulith', 'public'), { etag: true, lastModified: true, setHeaders: (res, filePath) => {
+    // Prevent browsers from caching JS/HTML so deployments take effect immediately
+    if (filePath.endsWith('.js') || filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
 
 // === DB & ORCHESTRATOR INIT ===
 // Removed manual DB init. Orchestrator handles it via init().
