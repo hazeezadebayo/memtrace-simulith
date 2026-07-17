@@ -21,7 +21,7 @@ async function runTests() {
     // 1. Test Qwen LLM
     try {
         console.log("\n[1/3] Pinging Qwen LLM (qwen-turbo)...");
-        const llmResponse = await callQwen(apiKey, "Ping. Reply exactly with the word 'Pong'.", 'qwen3-8b', 0.1);
+        const llmResponse = await callQwen(apiKey, "Ping. Reply exactly with the word 'Pong'.", 'qwen-turbo-latest', 0.1);
         console.log(`✅ Qwen LLM Response: "${llmResponse}"`);
     } catch (e) {
         console.error("❌ Qwen LLM Test Failed:", e.message);
