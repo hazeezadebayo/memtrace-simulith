@@ -87,3 +87,39 @@ Time:        11.611 s
 Ran all test suites.
 Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?
 Exit code: 0
+
+$ git status
+On branch main
+Your branch is up to date with 'origin/main'.
+Changes not staged for commit:
+	modified:   output_log.md
+	modified:   simulith/public/app.js
+	modified:   simulith/public/workspace.html
+
+$ git add simulith/public/app.js simulith/public/workspace.html output_log.md
+
+$ git commit -m "fix(simulith): enable real-time telemetry polling and stats tracking in Mesh and Council modes"
+[main a8a71ab] fix(simulith): enable real-time telemetry polling and stats tracking in Mesh and Council modes
+ 3 files changed, 26 insertions(+), 2 deletions(-)
+
+$ git push origin main
+To github.com:hazeezadebayo/memtrace-simulith.git
+   469ac5f..a8a71ab  main -> main
+
+$ git status
+On branch main
+Your branch is up to date with 'origin/main'.
+Changes not staged for commit:
+	modified:   output_log.md
+	modified:   project_report.md
+
+$ git add project_report.md output_log.md
+
+$ git commit -m "docs: document mesh & council telemetry fixes in project report"
+[main d6a77d1] docs: document mesh & council telemetry fixes in project report
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+$ git push origin main
+To github.com:hazeezadebayo/memtrace-simulith.git
+   a8a71ab..d6a77d1  main -> main
+
