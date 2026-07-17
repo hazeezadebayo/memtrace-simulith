@@ -895,6 +895,7 @@ async function pollJob(jobId, endpoint = '/api/v4/jobs') {
 
 // ── Council renderers ──────────────────────────────────────────────────
 function renderBranch(branch) {
+  if (!branch) return '';
   const evidence = (branch.evidenceLinks || []).map(i => `<span class="chip">${i.title || i.id}</span>`).join('');
   const reactions = (branch.reaction || []).map(i => `
     <div style="margin-bottom:8px">
@@ -1975,14 +1976,11 @@ async function runRouterScenario() {
           
           if (finalResult.recommendation) simResult.recommendation = finalResult.recommendation;
           if (finalResult.counterfactuals) simResult.counterfactuals = finalResult.counterfactuals;
-          if (finalResult.allBranches) {
+          if (finalResult.allBranches && finalResult.allBranches.length > 0) {
             simResult.branches = finalResult.allBranches;
-          } else {
-            const updated = finalResult.updatedBranch || finalResult;
+          } else if (finalResult.updatedBranch) {
             const bIndex = simResult.branches.findIndex(b => b.id === branchId);
-            if (bIndex >= 0) {
-                simResult.branches[bIndex] = updated;
-            }
+            if (bIndex >= 0) simResult.branches[bIndex] = finalResult.updatedBranch;
           }
           await rerender(simResult);
         } catch (err) {
@@ -2085,17 +2083,14 @@ function switchDivergenceTab(tabName, rawResults) {
           const finalResult = await pollJob(resJob.jobId, '/api/v4/jobs');
           logConsole('RESIMULATION COMPLETE.', 'success');
           
-          // Update cached results and switch tab to update view
+          // Atomically update the cached result before re-rendering
           if (finalResult.recommendation) councilResult.recommendation = finalResult.recommendation;
           if (finalResult.counterfactuals) councilResult.counterfactuals = finalResult.counterfactuals;
-          if (finalResult.allBranches) {
+          if (finalResult.allBranches && finalResult.allBranches.length > 0) {
             councilResult.branches = finalResult.allBranches;
-          } else {
-            const updated = finalResult.updatedBranch || finalResult;
+          } else if (finalResult.updatedBranch) {
             const bIndex = councilResult.branches.findIndex(b => b.id === branchId);
-            if (bIndex >= 0) {
-                councilResult.branches[bIndex] = updated;
-            }
+            if (bIndex >= 0) councilResult.branches[bIndex] = finalResult.updatedBranch;
           }
           rawResults.council = councilResult;
           switchDivergenceTab('council', rawResults);

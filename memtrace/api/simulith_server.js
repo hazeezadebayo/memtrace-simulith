@@ -97,7 +97,14 @@ export const queue = new JobQueue({
           runPersonas, 
           run.settings
         );
+
+        // Persist mutated persona reactions back into the run's population
+        if (run.population && Array.isArray(run.population.personas)) {
+          run.population.personas = runPersonas;
+        }
+
         const scoredBranch = run.branches.find(b => b.id === branchId);
+        if (!scoredBranch) throw new Error(`Resimulation scoring failed: branch '${branchId}' not found in scored array.`);
 
         const { callLLM, parseJson } = await import('../simulith/src/llm/ai.js');
         emit('Resimulation', 'Updating counterfactual consequence for modified branch...');
