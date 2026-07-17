@@ -1739,7 +1739,12 @@ async function runCouncilScenario() {
   const resultLogs = (result && (result.timeline || result.logs)) || null;
   if (resultLogs && Array.isArray(resultLogs)) {
     const parsed = parseTelemetryFromLogs(resultLogs, 'council');
-    currentTelemetry = { ...currentTelemetry, ...parsed };
+    currentTelemetry = {
+      ...currentTelemetry,
+      ...parsed,
+      durations: parsed.durations.length > 0 ? parsed.durations : currentTelemetry.durations,
+      graphDensity: parsed.graphDensity !== '0 relations / 0 nodes' ? parsed.graphDensity : currentTelemetry.graphDensity
+    };
   }
   logConsole(`COUNCIL COMPLETE.`, 'success');
   await rerender(result);
@@ -1780,7 +1785,12 @@ async function runMeshScenario() {
   const resultLogs = (result && (result.timeline || result.logs)) || null;
   if (resultLogs && Array.isArray(resultLogs)) {
     const parsed = parseTelemetryFromLogs(resultLogs, 'mesh');
-    currentTelemetry = { ...currentTelemetry, ...parsed };
+    currentTelemetry = {
+      ...currentTelemetry,
+      ...parsed,
+      durations: parsed.durations.length > 0 ? parsed.durations : currentTelemetry.durations,
+      graphDensity: parsed.graphDensity !== '0 relations / 0 nodes' ? parsed.graphDensity : currentTelemetry.graphDensity
+    };
   }
   logConsole(`MESH COMPLETE. ${result.interactions?.length || 0} INTERACTIONS RECORDED.`, 'success');
 
@@ -1928,7 +1938,12 @@ async function runRouterScenario() {
   const resultLogs = (simResult && (simResult.timeline || simResult.logs)) || null;
   if (resultLogs && Array.isArray(resultLogs)) {
     const parsed = parseTelemetryFromLogs(resultLogs, selectedMode);
-    currentTelemetry = { ...currentTelemetry, ...parsed };
+    currentTelemetry = {
+      ...currentTelemetry,
+      ...parsed,
+      durations: parsed.durations.length > 0 ? parsed.durations : currentTelemetry.durations,
+      graphDensity: parsed.graphDensity !== '0 relations / 0 nodes' ? parsed.graphDensity : currentTelemetry.graphDensity
+    };
   }
 
   if (selectedMode === 'mesh') {
