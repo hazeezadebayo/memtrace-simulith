@@ -1686,6 +1686,7 @@ async function runScenario() {
     throw err;
   } finally {
     currentAbortController = null;
+    updateTelemetryUI(currentTelemetry);
     stopTelemetryTimer();
     await refreshRuns();
 
@@ -1735,6 +1736,11 @@ async function runCouncilScenario() {
   }
   const data = await res.json();
   const result = data.simulation_result;
+  const resultLogs = (result && (result.timeline || result.logs)) || null;
+  if (resultLogs && Array.isArray(resultLogs)) {
+    const parsed = parseTelemetryFromLogs(resultLogs, 'council');
+    currentTelemetry = { ...currentTelemetry, ...parsed };
+  }
   logConsole(`COUNCIL COMPLETE.`, 'success');
   await rerender(result);
   renderInterviewPanel(collectedInterviews);
@@ -1771,6 +1777,11 @@ async function runMeshScenario() {
   const data = await res.json();
   const result = data.simulation_result;
   currentMeshSimId = result.id;
+  const resultLogs = (result && (result.timeline || result.logs)) || null;
+  if (resultLogs && Array.isArray(resultLogs)) {
+    const parsed = parseTelemetryFromLogs(resultLogs, 'mesh');
+    currentTelemetry = { ...currentTelemetry, ...parsed };
+  }
   logConsole(`MESH COMPLETE. ${result.interactions?.length || 0} INTERACTIONS RECORDED.`, 'success');
 
   results.innerHTML = renderMeshResults(result);
@@ -1912,6 +1923,13 @@ async function runRouterScenario() {
   setMode(selectedMode);
 
   const simResult = data.simulation_result;
+
+  // Extract logs from result for final telemetry merge
+  const resultLogs = (simResult && (simResult.timeline || simResult.logs)) || null;
+  if (resultLogs && Array.isArray(resultLogs)) {
+    const parsed = parseTelemetryFromLogs(resultLogs, selectedMode);
+    currentTelemetry = { ...currentTelemetry, ...parsed };
+  }
 
   if (selectedMode === 'mesh') {
     currentMeshSimId = simResult.id;
@@ -2492,6 +2510,20 @@ function startTelemetryTimer() {
                     currentTelemetry.durations.push({ label, duration: log.details.duration });
                   }
                 }
+                if (log.stage === 'tick_end' && log.details.duration !== undefined) {
+                  const tickNum = log.details.tick || (currentTelemetry.durations.length + 1);
+                  const label = `Tick ${tickNum}`;
+                  if (!currentTelemetry.durations.some(d => d.label === label)) {
+                    currentTelemetry.durations.push({ label, duration: log.details.duration });
+                  }
+                }
+                if (log.stage === 'phase_end' && log.details.duration !== undefined) {
+                  const phase = log.details.phase || `Phase ${currentTelemetry.durations.length + 1}`;
+                  const label = phase.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                  if (!currentTelemetry.durations.some(d => d.label === label)) {
+                    currentTelemetry.durations.push({ label, duration: log.details.duration });
+                  }
+                }
               }
             }
             printedAutomationLogsCount = data.logs.length;
@@ -2577,7 +2609,7 @@ function updateTelemetryUI(metrics = {}) {
         <span style="color:var(--text-secondary)">CLASSIFIED AREA:</span>
         <span style="color:var(--accent-cyan); font-weight:bold;">${field}</span>
       </div>
-      ${(currentMode === 'mesh' || currentMode === 'tree') ? `
+      ${(currentMode === 'mesh' || currentMode === 'tree' || currentMode === 'council') ? `
       <div style="display:flex; flex-direction:column; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:.2rem;">
         <span style="color:var(--text-secondary)">ACTIVE SCHEMA:</span>
         <span style="color:var(--text-primary); font-size:.7rem; margin-top:.1rem; word-break:break-all;">${activeSchema}</span>
@@ -2586,13 +2618,13 @@ function updateTelemetryUI(metrics = {}) {
         <span style="color:var(--text-secondary)">GRAPH DENSITY:</span>
         <span style="color:var(--text-primary); font-size:.7rem; margin-top:.1rem;">${density}</span>
       </div>
+      ` : ''}
       <div style="display:flex; flex-direction:column; padding-bottom:.2rem;">
         <span style="color:var(--text-secondary)">ROUND DURATIONS:</span>
         <div style="color:var(--text-primary); font-size:.7rem; margin-top:.1rem; line-height:1.2; display:flex; flex-direction:column; gap:2px;">
           ${durationsHtml}
         </div>
       </div>
-      ` : ''}
       ${(currentMode === 'divergence' || currentMode === 'router') ? `
       <div style="display:flex; flex-direction:column; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:.2rem;">
         <span style="color:var(--text-secondary)">ORCHESTRATION PHASE:</span>
@@ -2703,6 +2735,12 @@ function parseTelemetryFromLogs(logs, currentMode) {
       const tickNum = details.tick || durations.length + 1;
       if (!durations.some(d => d.label === `Tick ${tickNum}`)) {
         durations.push({ label: `Tick ${tickNum}`, duration: details.duration });
+      }
+    } else if (stage === 'phase_end' && details.duration !== undefined) {
+      const phase = details.phase || `Phase ${durations.length + 1}`;
+      const label = phase.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      if (!durations.some(d => d.label === label)) {
+        durations.push({ label, duration: details.duration });
       }
     } else if (msg.includes('completed in') && msg.includes('s')) {
       const match = msg.match(/(Round|Tick)\s+(\d+)\s+completed in\s+([\d.]+)\s*s/i);

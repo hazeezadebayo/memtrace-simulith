@@ -69,6 +69,7 @@ export async function simulateScenario(input = {}, state = {}, emit = () => {}) 
 
   const { determineDomainAndAudience, proposeGenerativeBranches, proposeGenerativePersonas, proposeGenerativeReactions } = await import('../agents/generative.js');
 
+  const classifyStart = Date.now();
   addLog(logs, emit, 'classify', 'Determining domain and audience dynamically...');
   const classification = await determineDomainAndAudience(scenario.question, scenario.facts);
   if (!scenario.domain || scenario.domain === 'general') {
@@ -81,6 +82,8 @@ export async function simulateScenario(input = {}, state = {}, emit = () => {}) 
     scenario.audience = classification.audience;
   }
 
+  addLog(logs, emit, 'phase_end', `Domain classified in ${((Date.now()-classifyStart)/1000).toFixed(1)}s`, { phase: 'domain_classification', duration: ((Date.now()-classifyStart)/1000).toFixed(1) });
+
   addLog(logs, emit, 'parse', 'Question parsed.', {
     domain: scenario.domain,
     audience: scenario.audience,
@@ -89,6 +92,7 @@ export async function simulateScenario(input = {}, state = {}, emit = () => {}) 
   });
   await sleep(25);
 
+  const evidenceStart = Date.now();
   const evidence = await buildEvidenceProfile(scenario);
   addLog(logs, emit, 'evidence', 'Evidence profile built.', {
     sources: evidence.summary.sourceCount,
@@ -97,6 +101,7 @@ export async function simulateScenario(input = {}, state = {}, emit = () => {}) 
     risk: evidence.summary.risk,
     contradictionCount: evidence.summary.contradictionCount
   });
+  addLog(logs, emit, 'phase_end', `Evidence profiled in ${((Date.now()-evidenceStart)/1000).toFixed(1)}s`, { phase: 'evidence_profiling', duration: ((Date.now()-evidenceStart)/1000).toFixed(1) });
   await sleep(25);
 
   let personas = generatePersonas(scenario, evidence, state, scenario.personaCount);
@@ -133,6 +138,7 @@ export async function simulateScenario(input = {}, state = {}, emit = () => {}) 
   const fallbackBranches = buildBranches(scenario, personas, evidence, state.settings || {});
   
   // CORE V7: Generative Injection (Parallelized)
+  const generativeStart = Date.now();
   if (input.isCancelled?.()) throw new Error('Simulation Cancelled by user.');
   
   const resolvedCustomPersonas = [];
@@ -216,6 +222,8 @@ export async function simulateScenario(input = {}, state = {}, emit = () => {}) 
     addLog(logs, emit, 'generative_error', `LLM persona generation failed. Using generic fallbacks.`);
   }
 
+  addLog(logs, emit, 'phase_end', `Generative injection completed in ${((Date.now()-generativeStart)/1000).toFixed(1)}s`, { phase: 'generative_injection', duration: ((Date.now()-generativeStart)/1000).toFixed(1) });
+
   addLog(logs, emit, 'branches', 'Branch pool built.', { branchCount: finalBranches.length });
   await sleep(25);
 
@@ -234,6 +242,7 @@ export async function simulateScenario(input = {}, state = {}, emit = () => {}) 
 
   const { conductCrossExamination } = await import('../agents/generative.js');
 
+  const crossExamStart = Date.now();
   const rawPopulation = [];
   for (const persona of personas) {
     if (input.isCancelled?.()) throw new Error('Simulation Cancelled by user.');
@@ -286,6 +295,8 @@ export async function simulateScenario(input = {}, state = {}, emit = () => {}) 
     populationReaction.push({ ...personaWithReactions, reactions: resolvedReactions });
   }
 
+  addLog(logs, emit, 'phase_end', `Cross-examination completed in ${((Date.now()-crossExamStart)/1000).toFixed(1)}s`, { phase: 'cross_examination', duration: ((Date.now()-crossExamStart)/1000).toFixed(1) });
+
   const scoredBranches = scoreBranches(finalBranches, scenario, evidence, branchGraph, populationReaction, state.settings || {});
   
   addLog(logs, emit, 'contradictions', 'Contradiction graph finalized.', {
@@ -302,6 +313,7 @@ export async function simulateScenario(input = {}, state = {}, emit = () => {}) 
 
   const recommendation = scoredBranches[0];
 
+  const briefStart = Date.now();
   addLog(logs, emit, 'brief', 'Drafting executive brief...');
   const { generateExecutiveBrief, generateCounterfactuals } = await import('../agents/generative.js');
   const brief = await generateExecutiveBrief(scenario, recommendation, emit);
@@ -310,9 +322,12 @@ export async function simulateScenario(input = {}, state = {}, emit = () => {}) 
   } else {
     addLog(logs, emit, 'brief_success', 'Executive brief drafted successfully.');
   }
+  addLog(logs, emit, 'phase_end', `Brief drafted in ${((Date.now()-briefStart)/1000).toFixed(1)}s`, { phase: 'brief_drafting', duration: ((Date.now()-briefStart)/1000).toFixed(1) });
 
+  const counterfactualStart = Date.now();
   addLog(logs, emit, 'counterfactuals', 'Simulating counterfactual realities...');
   const counterfactuals = await generateCounterfactuals(scenario, scoredBranches);
+  addLog(logs, emit, 'phase_end', `Counterfactuals completed in ${((Date.now()-counterfactualStart)/1000).toFixed(1)}s`, { phase: 'counterfactuals', duration: ((Date.now()-counterfactualStart)/1000).toFixed(1) });
   addLog(logs, emit, 'counterfactuals_success', 'Counterfactual Engine executed.');
 
   const domainStats = state.outcomeStats?.byDomain?.[scenario.domain] || { wins: 0, losses: 0 };
