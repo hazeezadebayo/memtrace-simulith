@@ -1057,7 +1057,54 @@ async function rerender(result) {
     });
   });
 
+  results.querySelectorAll('[data-resimulate-branch]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (currentMode !== 'council') {
+        console.warn("Re-simulate is only allowed in Council mode.");
+        return;
+      }
+      const branchId = btn.dataset.resimulateBranch;
+      const inputEl = document.getElementById(`counter-input-${branchId}`);
+      const newEvidence = inputEl ? inputEl.value.trim() : '';
 
+      if (!newEvidence) {
+        alert("Please provide a counter-argument or new evidence to re-simulate this branch.");
+        return;
+      }
+
+      btn.innerText = 'SIMULATING...';
+      btn.disabled = true;
+      logConsole(`RESIMULATING BRANCH: ${branchId} WITH NEW EVIDENCE`, 'system');
+
+      try {
+        const response = await fetch(`/api/v4/runs/${result.id}/branches/${branchId}/resimulate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newEvidence })
+        });
+        const resJob = await response.json();
+        if (!response.ok) throw new Error(resJob.error || 'Resimulation failed');
+
+        logConsole(`RESIMULATION QUEUED: ${resJob.jobId}`, 'system');
+        const finalResult = await pollJob(resJob.jobId, '/api/v4/jobs');
+        logConsole('RESIMULATION COMPLETE.', 'success');
+        
+        if (finalResult.recommendation) result.recommendation = finalResult.recommendation;
+        if (finalResult.counterfactuals) result.counterfactuals = finalResult.counterfactuals;
+        if (finalResult.allBranches && finalResult.allBranches.length > 0) {
+          result.branches = finalResult.allBranches;
+        } else if (finalResult.updatedBranch) {
+          const bIndex = result.branches.findIndex(b => b.id === branchId);
+          if (bIndex >= 0) result.branches[bIndex] = finalResult.updatedBranch;
+        }
+        await rerender(result);
+      } catch (err) {
+        logConsole(`RESIMULATION ERROR: ${err.message}`, 'error');
+        btn.innerText = 'RE-SIMULATE';
+        btn.disabled = false;
+      }
+    });
+  });
 }
 
 // ── Interview Panel Renderer ─────────────────────────────────────────

@@ -121,7 +121,15 @@ export const queue = new JobQueue({
         const cfResult = await callLLM(cfPrompt, 0.7);
         if (cfResult) {
           const parsedCf = parseJson(cfResult);
-          if (parsedCf && parsedCf.ifWrongConsequence && run.counterfactuals && run.counterfactuals.branchConsequences) {
+          if (parsedCf && parsedCf.ifWrongConsequence) {
+            if (!run.counterfactuals) run.counterfactuals = {};
+            if (!run.counterfactuals.branchConsequences) {
+              run.counterfactuals.branchConsequences = run.branches.map(b => ({
+                branchId: b.id,
+                title: b.title,
+                ifWrongConsequence: `A 100% deviation from the expected outcome in ${b.title} results in an unhedged exposure, leading to compounding systemic losses.`
+              }));
+            }
             const cfIndex = run.counterfactuals.branchConsequences.findIndex(c => c.branchId === branchId);
             if (cfIndex >= 0) {
               run.counterfactuals.branchConsequences[cfIndex].title = scoredBranch.title;
@@ -236,6 +244,7 @@ export const queue = new JobQueue({
         timeline: result.timeline,
         evidence: result.evidence,
         population: result.population,
+        counterfactuals: result.counterfactuals,
         createdAt: new Date().toISOString()
       });
       state.runs = state.runs.slice(0, 50);
