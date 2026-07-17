@@ -130,16 +130,45 @@ export const queue = new JobQueue({
           }
         }
 
-        if (run.branches[0].id === scoredBranch.id) {
+        // Re-draft the recommendation if the top branch changed or if the top branch was the one resimulated
+        const topBranch = run.branches[0];
+        if (run.recommendation?.branchId !== topBranch.id || topBranch.id === branchId) {
           const { generateExecutiveBrief } = await import('../simulith/src/agents/generative.js');
-          emit('Resimulation', 'Drafting updated executive brief for top recommendation...');
-          const brief = await generateExecutiveBrief(run.scenario, scoredBranch, emit);
+          emit('Resimulation', `Drafting updated executive brief for top recommendation: ${topBranch.title}...`);
+          const brief = await generateExecutiveBrief(run.scenario, topBranch, emit);
           run.recommendation = {
-            branchId: scoredBranch.id,
-            title: scoredBranch.title,
-            reason: brief.executiveBrief || (scoredBranch.why && scoredBranch.why.join(' ')) || 'Updated reason based on new evidence.',
+            branchId: topBranch.id,
+            title: topBranch.title,
+            reason: brief.executiveBrief || (topBranch.why && topBranch.why.join(' ')) || 'Updated reason based on new evidence.',
             whatWouldChangeMyMind: brief.councilalFactor || 'Need stronger evidence.'
           };
+        }
+
+        // Update the aggregate counterfactual fields
+        emit('Resimulation', 'Updating aggregate counterfactual assessment...');
+        const branchSummaries = run.branches.map(b => `- ${b.title}: ${b.action}`).join('\n        ');
+        const aggPrompt = `
+          <instructions>
+            Analyze the strategic variance across these branches:
+            ${branchSummaries}
+            
+            Identify the single most expensive assumption (highest mathematical downside risk) and the most survivable failure (lowest systemic blast radius).
+            Output EXACTLY ONE JSON object.
+          </instructions>
+          {"mostExpensiveAssumption":"1 analytical sentence identifying the highest leverage failure point","mostSurvivableFailure":"1 analytical sentence identifying the safest failure state"}
+        `;
+        const aggResult = await callLLM(aggPrompt, 0.75);
+        if (aggResult) {
+          const parsedAgg = parseJson(aggResult);
+          if (parsedAgg) {
+            if (!run.counterfactuals) run.counterfactuals = {};
+            if (parsedAgg.mostExpensiveAssumption) {
+              run.counterfactuals.mostExpensiveAssumption = parsedAgg.mostExpensiveAssumption;
+            }
+            if (parsedAgg.mostSurvivableFailure) {
+              run.counterfactuals.mostSurvivableFailure = parsedAgg.mostSurvivableFailure;
+            }
+          }
         }
 
         await saveState(payload.uuid, state);

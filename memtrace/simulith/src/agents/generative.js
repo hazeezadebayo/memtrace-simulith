@@ -348,11 +348,11 @@ export async function generateCounterfactuals(scenario, branches) {
     }
 
     if (parsed && parsed.ifWrongConsequence) {
-      consequences.push({ branchId: `branch_${i + 1}`, title: b.title, ifWrongConsequence: parsed.ifWrongConsequence });
+      consequences.push({ branchId: b.id, title: b.title, ifWrongConsequence: parsed.ifWrongConsequence });
     } else {
       // Deterministic, mathematically phrased fallback to guarantee the UI never breaks
       consequences.push({
-        branchId: `branch_${i + 1}`,
+        branchId: b.id,
         title: b.title,
         ifWrongConsequence: `A 100% deviation from the expected outcome in ${b.title} results in an unhedged exposure, leading to compounding systemic losses.`
       });

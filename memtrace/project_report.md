@@ -21,9 +21,12 @@ MemTrace is a Universal Mesh Intelligence and Scenario Decision Simulator. It in
 *   **Resimulation Branch Database Data Loss**: Fixed a severe structural bug in `api/simulith_server.js` where the engine was aggressively stripping `description`, `action`, and `objections` from the branches before persisting them to `state.runs`. This resulted in the LLM hallucinating during resimulations (because it received `undefined` for those properties) and caused the frontend sibling branches to be destroyed when the UI requested the re-scored branch array back. The backend now accurately saves and persists the full structural branch objects into the SQLite cache.
 *   **Client-Side Cache Busting**: Resolved a critical issue where the browser executed an outdated, cached version of `app.js` (loaded as `?v=4`), causing the resimulation pipeline to throw errors like `can't access property "evidenceLinks", branch is undefined`. Bumped the script reference to `?v=7` in `workspace.html` to force browsers to fetch the updated code.
 *   **Defensive Rendering Safeguards**: Hardened `renderBranch` and `renderResults` in `app.js` with comprehensive checks for null or undefined branches, reactions, and objections, ensuring stable UI transitions during asynchronous resimulations.
+*   **Counterfactual ID Mismatch Fix**: Resolved an ID mismatch bug where the initial simulation created counterfactual consequence IDs as `branch_1`, `branch_2`, etc., but the resimulation pipeline searched for them using original branch IDs like `gen-branch-1`. Corrected `generative.js` to preserve the original branch ID, allowing the counterfactual consequence for the resimulated branch to correctly update.
+*   **Recommendation Re-drafting on Resimulation**: Fixed an issue where the strategic recommendation/executive brief was only updated if the resimulated branch was the top branch before resimulation. The recommendation is now dynamically re-drafted whenever the top branch changes or the current top branch is resimulated.
+*   **Counterfactual Summary Update**: Added an LLM call during branch resimulation to re-evaluate the overall counterfactual summaries (`mostExpensiveAssumption` and `mostSurvivableFailure`) to keep them fully aligned with the updated branch states.
 
 ## Currently In Progress
-*   Monitoring remote deployment logs for any edge-case branch synchronization issues.
+*   Verifying final resimulation behaviors and log telemetry on the remote container.
 
 ## Remains to be Done
 *   Implement advanced edge traversal pruning if the FTS5 pool becomes overly polluted.
