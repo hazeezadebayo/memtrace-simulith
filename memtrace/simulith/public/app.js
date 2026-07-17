@@ -2441,7 +2441,7 @@ function startTelemetryTimer() {
       }
     }
 
-    if ((currentMode === 'router' || currentMode === 'divergence') && currentTelemetry.status === 'running' && !pollingStatus) {
+    if ((currentMode === 'router' || currentMode === 'divergence' || currentMode === 'mesh' || currentMode === 'council') && currentTelemetry.status === 'running' && !pollingStatus) {
       pollingStatus = true;
       try {
         const res = await fetch('/api/v4/automation/status', {
@@ -2461,6 +2461,21 @@ function startTelemetryTimer() {
               logConsole(log.message, log.stage || 'automation');
               if (log.stage === 'interview' && log.details) {
                 collectedInterviews.push(log.details);
+              }
+              if (log.details) {
+                if (log.details.tick !== undefined) {
+                  currentTelemetry.currentTick = log.details.tick;
+                } else if (log.details.round !== undefined) {
+                  currentTelemetry.currentTick = log.details.round;
+                }
+                if (log.details.edgesCount !== undefined) {
+                  const nodes = log.details.nodesCount || 0;
+                  const schemas = log.details.schemaTypes?.length || 0;
+                  currentTelemetry.graphDensity = `${log.details.edgesCount} relations / ${nodes} nodes (${schemas} schemas)`;
+                }
+                if (log.details.schemaTypes && log.details.schemaTypes.length > 0) {
+                  currentTelemetry.activeSchema = log.details.schemaTypes.join(', ');
+                }
               }
             }
             printedAutomationLogsCount = data.logs.length;

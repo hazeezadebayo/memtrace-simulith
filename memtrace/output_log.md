@@ -78,3 +78,12 @@ $ git commit -m "fix: persist counterfactuals on initial run and bind resimulate
 $ git push
 To github.com:hazeezadebayo/memtrace-simulith.git
    732ac40..53f2a60  main -> main
+
+$ npm test
+Test Suites: 5 passed, 5 total
+Tests:       92 passed, 92 total
+Snapshots:   0 total
+Time:        11.611 s
+Ran all test suites.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?
+Exit code: 0
