@@ -76,17 +76,17 @@ router.post('/router', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Question or decision query is required.' });
     }
 
+    // Token Check (require at least 50 tokens as a baseline for routing + simulation)
+    const user = await getUser(req.user.uuid);
+    if (!user || user.tokens < 50) {
+      return res.status(402).json({ error: `Insufficient tokens for Router Mode.` });
+    }
+
     // Guardrail Check
     const combinedInput = `${query} ${payload.facts || ''} ${payload.domain || ''}`;
     const isSafe = await checkInjectionGuardrail(combinedInput);
     if (!isSafe.safe) {
       return res.status(403).json({ error: isSafe.reason || 'Input blocked by security guardrails.' });
-    }
-
-    // Token Check (require at least 50 tokens as a baseline for routing + simulation)
-    const user = await getUser(req.user.uuid);
-    if (!user || user.tokens < 50) {
-      return res.status(402).json({ error: `Insufficient tokens for Router Mode.` });
     }
 
     await enrichPayload(req.user.uuid, payload);
@@ -160,17 +160,17 @@ router.post('/divergence', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Question or decision query is required.' });
     }
 
+    // Token Check (divergence runs all 3, need a higher baseline)
+    const user = await getUser(req.user.uuid);
+    if (!user || user.tokens < 150) {
+      return res.status(402).json({ error: `Insufficient tokens for Divergence Engine.` });
+    }
+
     // Guardrail Check
     const combinedInput = `${query} ${payload.facts || ''} ${payload.domain || ''}`;
     const isSafe = await checkInjectionGuardrail(combinedInput);
     if (!isSafe.safe) {
       return res.status(403).json({ error: isSafe.reason || 'Input blocked by security guardrails.' });
-    }
-
-    // Token Check (divergence runs all 3, need a higher baseline)
-    const user = await getUser(req.user.uuid);
-    if (!user || user.tokens < 150) {
-      return res.status(402).json({ error: `Insufficient tokens for Divergence Engine.` });
     }
 
     await enrichPayload(req.user.uuid, payload);

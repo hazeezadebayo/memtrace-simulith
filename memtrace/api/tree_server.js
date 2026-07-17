@@ -38,6 +38,21 @@ router.post('/simulate/tree', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Decision seed is required for Tree Mode.' });
     }
 
+    const depth           = safeNumber(payload.depth, 3, DEFAULT_CONFIG.LIMITS.tree.minDepth, DEFAULT_CONFIG.LIMITS.tree.maxDepth);
+    const branchingFactor = safeNumber(payload.branchingFactor, 3, DEFAULT_CONFIG.LIMITS.tree.minBranchingFactor, DEFAULT_CONFIG.LIMITS.tree.maxBranchingFactor);
+    const contextStr      = payload.context || 'General constraints';
+
+    // Token Forecasting
+    let forecasted = 5; // +2 for the adapter LLM calls
+    for (let k = 0; k < depth; k++) {
+      forecasted += Math.pow(branchingFactor, k) + 2 * Math.pow(branchingFactor, k + 1);
+    }
+
+    const user = await getUser(req.user.uuid);
+    if (!user || user.tokens < forecasted) {
+      return res.status(402).json({ error: `Insufficient tokens. Forecasted requirement is ${forecasted} tokens, but you only have ${user?.tokens || 0}.` });
+    }
+
     const isSafe = await checkInjectionGuardrail(payload.decision);
     if (!isSafe.safe) {
       return res.status(403).json({ error: isSafe.reason || 'Input blocked by security guardrails.' });
@@ -55,21 +70,6 @@ router.post('/simulate/tree', authenticate, async (req, res) => {
       activeTreeProgress.delete(req.user.uuid);
       activeTreeJobs.delete(req.user.uuid);
     });
-
-    const depth           = safeNumber(payload.depth, 3, DEFAULT_CONFIG.LIMITS.tree.minDepth, DEFAULT_CONFIG.LIMITS.tree.maxDepth);
-    const branchingFactor = safeNumber(payload.branchingFactor, 3, DEFAULT_CONFIG.LIMITS.tree.minBranchingFactor, DEFAULT_CONFIG.LIMITS.tree.maxBranchingFactor);
-    const contextStr      = payload.context || 'General constraints';
-
-    // Token Forecasting
-    let forecasted = 5; // +2 for the adapter LLM calls
-    for (let k = 0; k < depth; k++) {
-      forecasted += Math.pow(branchingFactor, k) + 2 * Math.pow(branchingFactor, k + 1);
-    }
-
-    const user = await getUser(req.user.uuid);
-    if (!user || user.tokens < forecasted) {
-      return res.status(402).json({ error: `Insufficient tokens. Forecasted requirement is ${forecasted} tokens, but you only have ${user?.tokens || 0}.` });
-    }
 
     const { getLLMCallCount, resetLLMCallCount } = await import('../extension/core/llm_agent.js');
     resetLLMCallCount();

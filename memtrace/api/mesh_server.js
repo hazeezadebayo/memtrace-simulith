@@ -16,13 +16,6 @@ router.post('/simulate/mesh', authenticate, async (req, res) => {
   try {
     const payload = { ...req.body, uuid: req.user?.uuid };
     
-    // Guardrail Check
-    const combinedInput = `${payload.question || ''} ${payload.facts || ''} ${payload.domain || ''}`;
-    const isSafe = await checkInjectionGuardrail(combinedInput);
-    if (!isSafe.safe) {
-      return res.status(403).json({ error: isSafe.reason || 'Input blocked by security guardrails.' });
-    }
-
     // Token Forecasting
     const user = await getUser(req.user.uuid);
     const agentCount = safeNumber(payload.agentCount, 5, DEFAULT_CONFIG.LIMITS.mesh.minAgents, DEFAULT_CONFIG.LIMITS.mesh.maxAgents);
@@ -31,6 +24,13 @@ router.post('/simulate/mesh', authenticate, async (req, res) => {
 
     if (!user || user.tokens < forecasted) {
       return res.status(402).json({ error: `Insufficient tokens. Forecasted requirement is ${forecasted} tokens, but you only have ${user?.tokens || 0}.` });
+    }
+
+    // Guardrail Check
+    const combinedInput = `${payload.question || ''} ${payload.facts || ''} ${payload.domain || ''}`;
+    const isSafe = await checkInjectionGuardrail(combinedInput);
+    if (!isSafe.safe) {
+      return res.status(403).json({ error: isSafe.reason || 'Input blocked by security guardrails.' });
     }
 
     // Run synchronously but stream progress via job queue
