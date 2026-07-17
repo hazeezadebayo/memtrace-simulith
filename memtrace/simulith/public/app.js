@@ -3638,6 +3638,9 @@ async function _treeLaunch() {
     currentTelemetry.status = 'completed';
     currentTelemetry.graphDensity = `${_treeData.tree.nodes.length} nodes computed`;
     currentTelemetry.llmCallCount = _treeData.llmCallCount || 0;
+    if (currentTelemetry.durations.length === 0 && currentTelemetry.elapsed && currentTelemetry.elapsed !== '0.0s') {
+      currentTelemetry.durations.push({ label: 'Tree Generation', duration: currentTelemetry.elapsed.replace('s', '') });
+    }
     stopTelemetryTimer();
     updateTelemetryUI(currentTelemetry);
 
