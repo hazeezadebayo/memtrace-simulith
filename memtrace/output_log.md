@@ -44,3 +44,21 @@ $ git commit -m "fix: cache busting & defensive rendering checks in Council resi
 $ git push
 To github.com:hazeezadebayo/memtrace-simulith.git
    455705c..fb33834  main -> main
+
+$ npm test
+Test Suites: 5 passed, 5 total
+Tests:       92 passed, 92 total
+Snapshots:   0 total
+Time:        15.401 s, estimated 16 s
+Ran all test suites.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?
+Exit code: 0
+
+$ git commit -m "fix: update recommendation and counterfactuals on resimulation"
+[main bd550d4] fix: update recommendation and counterfactuals on resimulation
+ 3 files changed, 41 insertions(+), 9 deletions(-)
+
+$ git push
+To github.com:hazeezadebayo/memtrace-simulith.git
+   5e30a60..bd550d4  main -> main
+
