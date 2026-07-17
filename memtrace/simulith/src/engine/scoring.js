@@ -76,9 +76,11 @@ function buildObjections(branch, evidenceProfile, personas) {
     })
     .map(persona => `${persona.name} formally rejects this specific path.`);
     
-  // 3. Fallback to global context if we need more volume
+  // 3. Fallback to global context if we need more volume — skip generic dummy labels
   for (const risk of evidenceProfile.score?.risk || []) {
-    objections.push(`Context Risk: ${risk.label}`);
+    if (risk.label && risk.label !== 'Risk Signal') {
+      objections.push(`Context Risk: ${risk.label}`);
+    }
   }
 
   return [...personaPushback, ...objections].slice(0, 4);

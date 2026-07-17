@@ -191,15 +191,9 @@ export const queue = new JobQueue({
         id: result.id,
         scenario: result.scenario,
         recommendation: result.recommendation,
-        branches: result.branches.map(branch => ({
-          id: branch.id,
-          title: branch.title,
-          score: branch.score,
-          rank: branch.rank,
-          confidence: branch.confidence
-        })),
+        branches: result.branches,
         timeline: result.timeline,
-        evidence: result.evidence.summary,
+        evidence: result.evidence,
         population: result.population,
         createdAt: new Date().toISOString()
       });
