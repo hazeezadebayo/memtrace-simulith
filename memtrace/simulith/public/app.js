@@ -1741,6 +1741,12 @@ async function runCouncilScenario() {
       durations: parsed.durations.length > 0 ? parsed.durations : currentTelemetry.durations,
       graphDensity: parsed.graphDensity !== '0 relations / 0 nodes' ? parsed.graphDensity : currentTelemetry.graphDensity
     };
+    // Collect interview logs from result to avoid telemetry-timer race
+    resultLogs.forEach(log => {
+      if (log.stage === 'interview' && log.details) {
+        collectedInterviews.push(log.details);
+      }
+    });
   }
   logConsole(`COUNCIL COMPLETE.`, 'success');
   await rerender(result);
@@ -1861,6 +1867,7 @@ function calculateForecasts(dMetric, sMetric, mode) {
 }
 
 async function runRouterScenario() {
+  collectedInterviews.length = 0; // reset for new run
   logConsole('CONNECTING TO AUTOMATION ROUTER...', 'system');
   logConsole('CLASSIFYING INPUT REALITY DOMAIN...', 'system');
 
@@ -1923,6 +1930,16 @@ async function runRouterScenario() {
   logConsole(`REASONING: ${data.router_selection.reasoning}`, 'system');
 
   const selectedMode = data.router_selection.mode.toLowerCase();
+
+  // Collect interview logs from result before setMode() to avoid telemetry-timer race
+  const rawTimeline = data.simulation_result && (data.simulation_result.timeline || data.simulation_result.logs);
+  if (rawTimeline && Array.isArray(rawTimeline)) {
+    rawTimeline.forEach(log => {
+      if (log.stage === 'interview' && log.details) {
+        collectedInterviews.push(log.details);
+      }
+    });
+  }
 
   // Set currentMode and call setMode to update UI elements, active class, run button label
   currentMode = selectedMode;
@@ -2093,9 +2110,7 @@ async function runRouterScenario() {
       });
     });
 
-    if (simResult.interviews && simResult.interviews.length > 0) {
-      renderInterviewPanel(simResult.interviews);
-    }
+    renderInterviewPanel(collectedInterviews);
   }
 }
 
@@ -2204,8 +2219,10 @@ function switchDivergenceTab(tabName, rawResults) {
       });
     });
     // Show interviews
-    if (councilResult.interviews && councilResult.interviews.length > 0) {
-      renderInterviewPanel(councilResult.interviews);
+    const councilTimeline = councilResult.timeline || councilResult.logs || [];
+    const councilInterviews = councilTimeline.filter(l => l.stage === 'interview' && l.details).map(l => l.details);
+    if (councilInterviews.length > 0) {
+      renderInterviewPanel(councilInterviews);
     }
   } else if (tabName === 'mesh') {
     const meshResult = rawResults.mesh;
