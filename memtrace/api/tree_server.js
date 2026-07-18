@@ -185,6 +185,7 @@ router.post('/simulate/tree', authenticate, async (req, res) => {
       console.error('[TreeRouter] Failed to save tree simulation:', dbErr);
     }
 
+    result.durationSec = Math.round((Date.now() - startTime) / 1000);
     res.json(result);
   } catch (err) {
     if (req.user?.uuid) {

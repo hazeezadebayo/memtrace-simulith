@@ -2012,6 +2012,11 @@ async function runRouterScenario() {
     currentTelemetry.llmCallCount = _treeData.llmCallCount || 0;
     updateTelemetryUI(currentTelemetry);
 
+    if (_treeData.durationSec) {
+      currentTelemetry.durations.push({ label: 'Tree Builder', duration: _treeData.durationSec });
+      updateTelemetryUI(currentTelemetry);
+    }
+
     const varLabels = (_treeData.decisionSpace || {}).variable_labels || {};
     const flowCont = _t('tree-flow-content');
     if (flowCont) {
