@@ -765,15 +765,15 @@ const samples = {
     facts: ['Buying a home would fast-track Turkish citizenship and give me long-term stability', 'A single major earthquake could destroy the property and my entire savings', 'Moving to Europe means starting from zero — new language, new network, new career', 'I have lived in Turkey for 6 years with an established social and professional network', 'Real estate prices in Kocaeli have risen 40% in the last year, agents say buy now', 'Tech salaries in Europe are 3x higher but so is the cost of living', 'European immigration policies are tightening and visas may be harder to get in 2 years'],
     branchCount: '6', personaCount: '5'
   },
-  startup: {
-    question: 'Should I quit my vibe coded software dream or invest more time by adding more features?',
-    facts: ['I have a working prototype', 'I only have 2 months of runway', 'I do not know if people will pay', 'Users might want a cheaper option', 'Similar products already exists'],
+  calorie: {
+    question: 'If I eat at a 500-calorie deficit every day for 3 months, how will my weight, energy levels, and metabolic rate change?',
+    facts: ['Current weight is 180 lbs at 5\'10"', 'Daily maintenance calories are 2,500', '500-calorie deficit burns roughly 1 lb of fat per week', 'Metabolic adaptation can reduce BMR by 10-15% during prolonged deficits', 'Energy levels fluctuate as the body adjusts to reduced fuel intake'],
     branchCount: '5', personaCount: '3'
   },
-  career: {
-    question: 'Should I quit my job and pursue a startup idea?',
-    facts: ['The current role is stable, high pay but slow', 'I want more growth', 'I can survive for a few months building', 'My manager can change the role quickly', 'I have interviews lined up but i also have my own idea for an AI company'],
-    branchCount: '6', personaCount: '3'
+  soda: {
+    question: 'If I replace all my soda consumption with water for 6 months, how will my weight, dental health, and monthly expenses change?',
+    facts: ['I drink 2 cans of soda daily (300 calories, $1.50/day)', 'Each can has 39g of sugar — well above daily recommended limit', 'Sugar linked to tooth decay and systemic inflammation', 'Monthly soda spend is roughly $45', 'Tap water costs pennies and has zero sugar or calories'],
+    branchCount: '5', personaCount: '3'
   },
   channel: {
     question: 'Would people react positively or negatively to my talking head YouTube videos about practical AI tutorials?',
