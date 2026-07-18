@@ -7,7 +7,7 @@ services:
       dockerfile: docker/Dockerfile.dev
     ports: [ "3000:3106" ]
     env_file:
-      - ../../.env
+      - ../../memtrace_cicd/.env
     volumes: 
       - ../data:/app/data
       - ../simulith:/app/simulith

@@ -81,3 +81,7 @@ git_workflow.md
 
 # Extension Config (committed — reads all values from process.env)
 # memtrace/extension/env/config.js
+
+# Hackathon submission folder and CI/CD tools
+memtrace_cicd/
+qwen_hackathon/

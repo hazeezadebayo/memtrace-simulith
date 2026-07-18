@@ -7,6 +7,26 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR/memtrace"
 DOCKER_DIR="$PROJECT_ROOT/docker"
 
+function ensure_env() {
+    CICD_DIR="$SCRIPT_DIR/memtrace_cicd"
+    CICD_ENV="$CICD_DIR/.env"
+    ROOT_EXAMPLE="$SCRIPT_DIR/.env.example"
+
+    if [ ! -f "$CICD_ENV" ]; then
+        echo "📂 Creating missing memtrace_cicd directory..."
+        mkdir -p "$CICD_DIR"
+        
+        if [ -f "$ROOT_EXAMPLE" ]; then
+            echo "📝 Initializing single source of truth .env from .env.example..."
+            cp "$ROOT_EXAMPLE" "$CICD_ENV"
+        else
+            echo "❌ Error: .env.example is missing at the root. Cannot initialize .env."
+            exit 1
+        fi
+    fi
+}
+
+
 function usage() {
     echo "Usage: $0 [command]"
     echo ""
@@ -59,10 +79,12 @@ function usage() {
 
 case "$1" in
     build)
+        ensure_env
         echo "🏗️ Building MemTrace images..."
         cd "$DOCKER_DIR" && docker compose -f docker-compose.dev.yml build
         ;;
     up)
+        ensure_env
         echo "🚀 Starting MemTrace..."
         cd "$DOCKER_DIR" && docker compose -f docker-compose.dev.yml up -d
         echo "⏳ Waiting for API..."
