@@ -1945,6 +1945,13 @@ async function runRouterScenario() {
       durations: parsed.durations.length > 0 ? parsed.durations : currentTelemetry.durations,
       graphDensity: parsed.graphDensity !== '0 relations / 0 nodes' ? parsed.graphDensity : currentTelemetry.graphDensity
     };
+
+    // Bridge any interview logs from the final result that polling may have missed
+    resultLogs.forEach(log => {
+      if (log.stage === 'interview') {
+        logConsole(log.message, log.stage);
+      }
+    });
   }
 
   if (selectedMode === 'mesh') {
@@ -2492,7 +2499,13 @@ function startTelemetryTimer() {
           if (data.logs && data.logs.length > printedAutomationLogsCount) {
             for (let i = printedAutomationLogsCount; i < data.logs.length; i++) {
               const log = data.logs[i];
-              logConsole(log.message, log.stage || 'automation');
+              // Telemetry metadata stages drown out the actual conversation.
+              // Skip them from the console — they serve the ROUND DURATIONS panel, not the log feed.
+              if (log.stage === 'phase_end' || log.stage === 'round_end' || log.stage === 'tick_end') {
+                // still needs to go through the details block below for telemetry tracking
+              } else {
+                logConsole(log.message, log.stage || 'automation');
+              }
               if (log.stage === 'interview' && log.details) {
                 collectedInterviews.push(log.details);
               }

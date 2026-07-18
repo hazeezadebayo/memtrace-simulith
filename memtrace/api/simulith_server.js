@@ -25,11 +25,6 @@ export const queue = new JobQueue({
   backoffMs: 500,
   processJob: async (payload, emit, job) => {
     resetLLMCallCount();
-    if (payload._enrichmentLogs?.length) {
-      for (const l of payload._enrichmentLogs) {
-        emit(l.stage, l.message);
-      }
-    }
     try {
       if (payload.type === 'resimulate') {
         const state = await loadState(payload.uuid);

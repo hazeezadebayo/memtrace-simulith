@@ -43,7 +43,9 @@ export function logAutomation(uuid, stage, message, details = {}) {
 
 export function clearAutomationLogs(uuid) {
   if (!uuid) return;
-  globalAutomationLogs.delete(uuid);
+  const arr = globalAutomationLogs.get(uuid);
+  if (arr) arr.length = 0;
+  else globalAutomationLogs.delete(uuid);
 }
 
 export function getAutomationLogs(uuid) {
@@ -67,7 +69,17 @@ export async function pollJob(pollUrl, token, uuid, signal) {
         throw new Error((await res.json()).error || 'Failed to poll job status');
       }
       const job = await res.json();
-      
+
+      // Read logs and stream them to automation logs BEFORE status check,
+      // so the final batch isn't stranded in job.logs on completion.
+      if (job.logs && job.logs.length > printedCount) {
+        for (let i = printedCount; i < job.logs.length; i++) {
+          const log = job.logs[i];
+          logAutomation(uuid, log.stage || 'simulation', log.message, log.details);
+        }
+        printedCount = job.logs.length;
+      }
+
       if (job.status === 'completed' || job.status === 'done') {
         return job.result;
       }
@@ -76,15 +88,6 @@ export async function pollJob(pollUrl, token, uuid, signal) {
       }
       if (job.status === 'cancelled') {
         throw new Error('Simulation Cancelled by user.');
-      }
-
-      // Read logs and stream them to automation logs
-      if (job.logs && job.logs.length > printedCount) {
-        for (let i = printedCount; i < job.logs.length; i++) {
-          const log = job.logs[i];
-          logAutomation(uuid, log.stage || 'simulation', log.message, log.details);
-        }
-        printedCount = job.logs.length;
       }
 
       // Wait 1000ms before polling again
