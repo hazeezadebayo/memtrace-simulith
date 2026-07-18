@@ -765,15 +765,15 @@ const samples = {
     facts: ['Buying a home would fast-track Turkish citizenship and give me long-term stability', 'A single major earthquake could destroy the property and my entire savings', 'Moving to Europe means starting from zero — new language, new network, new career', 'I have lived in Turkey for 6 years with an established social and professional network', 'Real estate prices in Kocaeli have risen 40% in the last year, agents say buy now', 'Tech salaries in Europe are 3x higher but so is the cost of living', 'European immigration policies are tightening and visas may be harder to get in 2 years'],
     branchCount: '6', personaCount: '5'
   },
-  pricing: {
-    question: 'Should I pivot my B2B SaaS from monthly subscriptions to a usage-based pricing model?',
-    facts: ['Current MRR is $45K with 120 customers on monthly plans', 'Churn rate is 8% monthly, mostly from small customers who outgrow their plan', 'Usage-based pricing could increase revenue from power users by 3x', 'Implementation would take 3 months and delay new feature development', 'Sales team is worried unpredictable bills will scare away new customers', 'One competitor switched to usage-based and grew ARR by 60%'],
-    branchCount: '6', personaCount: '4'
+  startup: {
+    question: 'Should I quit my vibe coded software dream or invest more time by adding more features?',
+    facts: ['I have a working prototype', 'I only have 2 months of runway', 'I do not know if people will pay', 'Users might want a cheaper option', 'Similar products already exists'],
+    branchCount: '5', personaCount: '3'
   },
-  capital: {
-    question: 'Should I invest my $100K savings in index funds or use it to start my own business?',
-    facts: ['The stock market has averaged 10% annual returns historically', 'Starting a business has a 50% failure rate in the first year', 'I have 6 months of living expenses saved separately', 'My business idea targets a $500M market growing at 20% YoY', 'I can work on the business part-time while keeping my job for 6 months', 'A financial advisor recommends dollar-cost averaging into index funds'],
-    branchCount: '5', personaCount: '4'
+  career: {
+    question: 'Should I quit my job and pursue a startup idea?',
+    facts: ['The current role is stable, high pay but slow', 'I want more growth', 'I can survive for a few months building', 'My manager can change the role quickly', 'I have interviews lined up but i also have my own idea for an AI company'],
+    branchCount: '6', personaCount: '3'
   },
   channel: {
     question: 'Would people react positively or negatively to my talking head YouTube videos about practical AI tutorials?',
