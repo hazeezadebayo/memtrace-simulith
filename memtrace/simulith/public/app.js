@@ -3237,48 +3237,64 @@ window.loadUserSimulations = async function (uuid) {
 };
 
 document.getElementById('btn-clear-screen').addEventListener('click', () => {
-  if (currentMode === 'tree') {
-    const flowCont = document.getElementById('tree-flow-content');
-    const resultsCont = document.getElementById('tree-results-container');
-    if (flowCont) {
-      flowCont.style.padding = '0';
-      flowCont.style.position = 'relative';
-      flowCont.style.minHeight = 'calc(100vh - 2rem)';
-      flowCont.innerHTML = TREE_EMPTY_STATE;
-    }
-    if (resultsCont) resultsCont.style.display = 'none';
-
-    if (typeof currentTutorialCleanup === 'function') {
-      currentTutorialCleanup();
-      currentTutorialCleanup = null;
-    }
-    setTimeout(() => {
-      const tutCanvas = document.getElementById('tree-physics-canvas');
-      if (tutCanvas && flowCont) {
-        tutCanvas.width = flowCont.clientWidth;
-        tutCanvas.height = flowCont.clientHeight;
-      }
-      if (typeof initTutorialPhysics === 'function') {
-        currentTutorialCleanup = initTutorialPhysics('tree-physics-canvas', 'tree');
-      }
-    }, 50);
-  } else {
-    renderEmptyState(currentMode);
+  // 1. Kill any in-flight simulation
+  if (currentAbortController) {
+    currentAbortController.abort();
+    currentAbortController = null;
   }
+  stopTelemetryTimer();
 
-  const meshPanel = document.getElementById('mesh-feed-panel');
-  if (meshPanel) meshPanel.classList.remove('visible');
-  const interviewPanel = document.getElementById('interview-panel');
-  if (interviewPanel) interviewPanel.classList.remove('visible');
+  // 2. Reset all application state to initial values (mirrors page load)
+  currentMode = 'router';
+  currentTelemetry = {
+    currentTick: 0, maxTicks: 0, llmCallCount: 0, elapsed: '0.0s',
+    determinedField: 'CLASSIFYING DOMAIN...', activeSchema: 'N/A',
+    graphDensity: '0 relations / 0 nodes (0 schemas)', durations: []
+  };
+  Object.assign(modeStatus, { council: 'idle', mesh: 'idle', tree: 'idle', router: 'idle', divergence: 'idle' });
+  collectedInterviews.length = 0;
+  printedAutomationLogsCount = 0;
+  currentPollJobId = null;
+  currentPollEndpoint = null;
+  currentCouncilSimId = null;
+  currentMeshSimId = null;
+  _treeData = null;
+
+  // 3. Clear all UI panels
+  results.innerHTML = '';
+  statusEl.innerHTML = '';
+  document.getElementById('mesh-feed-panel')?.classList.remove('visible');
+  document.getElementById('interview-panel')?.classList.remove('visible');
   const interviewLog = document.getElementById('interview-log');
   if (interviewLog) interviewLog.innerHTML = '<p style="color:var(--text-secondary);font-size:.78rem;font-style:italic;">No cross-examinations this run — all personas committed to a firm stance on first evaluation.</p>';
 
-  if (currentMode === 'council') currentCouncilSimId = null;
-  else if (currentMode === 'mesh') currentMeshSimId = null;
-  else if (currentMode === 'tree') {
-    modeStatus.tree = 'idle';
-    if (typeof _treeData !== 'undefined') window._treeData = null; // Assuming _treeData is global or available
+  // 4. Clean up tree mode artifacts
+  const flowCont = document.getElementById('tree-flow-content');
+  if (flowCont) {
+    flowCont.style.padding = '0';
+    flowCont.style.position = 'relative';
+    flowCont.style.minHeight = 'calc(100vh - 2rem)';
+    flowCont.innerHTML = TREE_EMPTY_STATE;
   }
+  const resultsCont = document.getElementById('tree-results-container');
+  if (resultsCont) resultsCont.style.display = 'none';
+  if (typeof currentTutorialCleanup === 'function') {
+    currentTutorialCleanup();
+    currentTutorialCleanup = null;
+  }
+  setTimeout(() => {
+    const tutCanvas = document.getElementById('tree-physics-canvas');
+    if (tutCanvas && flowCont) {
+      tutCanvas.width = flowCont.clientWidth;
+      tutCanvas.height = flowCont.clientHeight;
+    }
+    if (typeof initTutorialPhysics === 'function') {
+      currentTutorialCleanup = initTutorialPhysics('tree-physics-canvas', 'tree');
+    }
+  }, 50);
+
+  // 5. Re-enter router mode with clean empty state
+  setMode('router');
 });
 
 const homeLogoHandler = () => {
