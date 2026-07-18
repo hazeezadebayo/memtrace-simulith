@@ -1794,6 +1794,17 @@ async function runMeshScenario() {
       graphDensity: parsed.graphDensity !== '0 relations / 0 nodes' ? parsed.graphDensity : currentTelemetry.graphDensity
     };
   }
+  // Mesh timeline only has interaction events, not telemetry logs — extract durations from roundSummaries
+  if (result.roundSummaries && result.roundSummaries.length > 0) {
+    result.roundSummaries.forEach(rs => {
+      if (rs.duration) {
+        const label = `Tick ${rs.round}`;
+        if (!currentTelemetry.durations.some(d => d.label === label)) {
+          currentTelemetry.durations.push({ label, duration: rs.duration });
+        }
+      }
+    });
+  }
   logConsole(`MESH COMPLETE. ${result.interactions?.length || 0} INTERACTIONS RECORDED.`, 'success');
 
   results.innerHTML = renderMeshResults(result);
@@ -1972,6 +1983,17 @@ async function runRouterScenario() {
     meshFeedPanel.classList.add('visible');
     renderFeed(simResult.interactions || [], simResult.roundSummaries || []);
     initRelationsGraphHover(simResult.agents || []);
+    // Mesh timeline only has interaction events — extract tick durations from roundSummaries
+    if (simResult.roundSummaries && simResult.roundSummaries.length > 0) {
+      simResult.roundSummaries.forEach(rs => {
+        if (rs.duration) {
+          const label = `Tick ${rs.round}`;
+          if (!currentTelemetry.durations.some(d => d.label === label)) {
+            currentTelemetry.durations.push({ label, duration: rs.duration });
+          }
+        }
+      });
+    }
 
     document.querySelectorAll('[data-agent-id]').forEach(card => {
       card.addEventListener('click', e => {
