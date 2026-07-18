@@ -2841,12 +2841,13 @@ form.addEventListener('submit', async e => {
   const isCancel = btnRun.textContent.startsWith('Cancel ') || btnRun.textContent.startsWith('CANCEL ');
 
   if (isCancel) {
+    // Always abort the client-side fetch first — all scenario functions wire the signal
+    if (currentAbortController) {
+      currentAbortController.abort();
+      currentAbortController = null;
+    }
+    // Then send server-side cancel signal
     if (currentMode === 'router' || currentMode === 'divergence') {
-      if (currentAbortController) {
-        currentAbortController.abort();
-        currentAbortController = null;
-      }
-      // Explicitly kill the in-flight job on the server — don't rely on TCP close detection
       const cancelEndpoint = currentMode === 'router'
         ? '/api/v4/automation/router/cancel'
         : '/api/v4/automation/divergence/cancel';
