@@ -188,6 +188,7 @@ At the end of each round, agents evaluate their alignment. If an agent's positio
 
 * The LLM reviews the agent's backstory, positions, and other graph nodes.
 * It returns:
+
   $$
   \text{JSON} = \{\text{changeFaction}: \text{boolean}, \text{newFaction}: \text{"node\_id"}, \text{rationale}: \text{"string"}\}
   $$
@@ -392,12 +393,12 @@ flowchart TD
         G -->|Council Mode| O["agents/interview.js + engine/simulator.js"]
         G -->|Mesh Mode| P["agents/mesh.js + engine/tick_engine.js"]
         G -->|Tree Mode| Q["tree/tree_builder.js + tree/probability_engine.js"]
-      
+    
         O -->|Qwen Chat| R["qwen_llm_api_adapter.js"]
         P -->|Qwen Chat| R
         Q -->|Qwen Chat| R
         R -->|dashscope-intl.aliyuncs.com| S[("Qwen Cloud API")]
-      
+    
         O -->|Score & Report| T["engine/scoring.js + engine/report_generator.js"]
         P -->|Belief Drift| U["agents/belief_state.js"]
         Q -->|Utility Scoring| V["tree/utility_scorer.js"]
@@ -798,6 +799,15 @@ POST /api/v4/simulate/tree
 | **Qualitative Feedback**  | Narrative escalation maps and static readouts               | **Post-Simulation Reporter Interviews**: Direct, interactive agent chats and multi-turn stakeholder cross-examinations.   |
 | **Processing Efficiency** | Heavy, unbounded agent prompts that risk context truncation | **Zero-Shot Probabilistic Classifiers**: Probabilistic action sampling reduces writing actions by 70%, conserving tokens. |
 
+### Similar Companies & Platforms
+
+* **societies.io**: [https://societies.io/](https://societies.io/)
+* **Similate AI**: [https://www.similate.ai/](https://www.similate.ai/)
+* **SYMAR**: [https://www.symar.ai/](https://www.symar.ai/)
+* **Simfolk**: [https://simfolk.ai/](https://simfolk.ai/)
+* **User Intuition**: [https://userintuition.com/](https://userintuition.com/)
+* **Delve AI**: [https://www.delve.ai/](https://www.delve.ai/)
+
 ### Moats & Edge Cases
 
 1. **Continuous Learning Loop**: By ingesting final simulation reports directly back into the MemTrace vector storage, subsequent runs are automatically aware of historical outcomes.
@@ -923,7 +933,7 @@ Central config reads from environment variables:
 When modifying or expanding the MemTrace/Simulith simulation engine, adhere to the following sequence:
 
 1. **Mesh Constraints**: The maximum mesh size is capped at 40. The 1:9 archetype distribution must be maintained if the population size is adjusted.
-2. **Prompts & Limits**: Do not exceed the 1024 token limit. If adding new features, audit prompt templates to ensure they truncate unbounded inputs (like facts, backstories, and summaries) using `DEFAULT_CONFIG.promptLimits`.
+2. **Prompts & Limits**: for  lightweight local models, do not exceed the 1024 token limit. If adding new features, audit prompt templates to ensure they truncate unbounded inputs (like facts, backstories, and summaries) using `DEFAULT_CONFIG.promptLimits`.
 3. **Graph Operations**: If the schema in `agent_memory.js` is modified, ensure database migrations are non-destructive and preserve the dynamic faction-tipping relationships.
 4. **Scoring**: Keep the scoring models in `scoring.js` deterministic. Do not delegate mathematical aggregation or scoring weights calculations to the LLM.
 
