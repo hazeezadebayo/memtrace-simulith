@@ -393,12 +393,12 @@ flowchart TD
         G -->|Council Mode| O["agents/interview.js + engine/simulator.js"]
         G -->|Mesh Mode| P["agents/mesh.js + engine/tick_engine.js"]
         G -->|Tree Mode| Q["tree/tree_builder.js + tree/probability_engine.js"]
-    
+  
         O -->|Qwen Chat| R["qwen_llm_api_adapter.js"]
         P -->|Qwen Chat| R
         Q -->|Qwen Chat| R
         R -->|dashscope-intl.aliyuncs.com| S[("Qwen Cloud API")]
-    
+  
         O -->|Score & Report| T["engine/scoring.js + engine/report_generator.js"]
         P -->|Belief Drift| U["agents/belief_state.js"]
         Q -->|Utility Scoring| V["tree/utility_scorer.js"]
@@ -807,16 +807,23 @@ POST /api/v4/simulate/tree
 * **Simfolk**: [https://simfolk.ai/](https://simfolk.ai/)
 * **User Intuition**: [https://userintuition.com/](https://userintuition.com/)
 * **Delve AI**: [https://www.delve.ai/](https://www.delve.ai/)
+* **MiroFish**: [https://](https://www.delve.ai/)[mirofish.my/](https://mirofish.my/)
 
 ### Moats & Edge Cases
 
 1. **Continuous Learning Loop**: By ingesting final simulation reports directly back into the MemTrace vector storage, subsequent runs are automatically aware of historical outcomes.
 2. **Deterministic Scoring Integration**: Unlike platforms that rely on LLMs to output mathematical forecasts (which introduces hallucination risks), MemTrace runs LLMs purely for qualitative reasoning and computes final confidence scores using deterministic mathematical models in `scoring.js`.
+3. **Tri-Modal Simulation Space**: Supports three simulation models (Mesh, Council, and Tree) executed under a unified framework to capture different aspects of social belief, strategic choices, and causal consequence pathways.
+4. **Local Execution & Data Privacy**: The entire pipeline is capable of running 100% locally in-browser using SQLite WASM and local embedding models, resolving any enterprise data residency or leakage concerns.
+5. **Token-Efficiency & Low Access Cost**: Employs zero-shot likelihood classifiers and local caching to minimize active LLM token usage, making simulation loops highly cost-effective compared to traditional agent tools.
+6. **Dual B2B/B2C Accessibility**: Serves both enterprise stakeholders (B2B) evaluating risk and individual consumers (B2C) analyzing content drift, personal policies, or social reactions.
+7. **Mathematical Orchestration Engine**: Divergence evaluations and multi-path comparisons are managed mathematically rather than via simple LLM prompt routing.
+8. **Direct Custom Persona Ingestion**: Enables users to directly input custom stakeholder descriptions, which the engine automatically translates, indexes, and deploys as active simulation agents.
 
 ### Shortcomings & Bottlenecks
 
 1. **Local Model Latency**: Running CPU-bound local models (via `@xenova/transformers` and `node-llama-cpp`) introduces processing latency during local testing.
-2. **Context Limits**: Deep, multi-turn interviews can hit token limits (~1024 tokens) if prompt formatting limits are not aggressively enforced.
+2. **Context Limits**: Deep, multi-turn interviews can hit token limits (~1024 tokens) if prompt formatting limits are not aggressively enforced for local models.
 
 ---
 
