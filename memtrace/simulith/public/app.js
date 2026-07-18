@@ -755,40 +755,35 @@ function setMode(mode) {
 
 // ── Samples ──────────────────────────────────────────────────────────
 const samples = {
-  startup: {
-    question: 'Should I quit my vibe coded software dream or invest more time by adding more features?',
-    facts: ['I have a working prototype', 'I only have 2 months of runway', 'I do not know if people will pay', 'Users might want a cheaper option', 'Similar products already exists'],
-    branchCount: '5', personaCount: '3'
-  },
-  career: {
-    question: 'Should I quit my job and pursue a startup idea?',
-    facts: ['The current role is stable, high pay but slow', 'I want more growth', 'I can survive for a few months building', 'My manager can change the role quickly', 'I have interviews lined up but i also have my own idea for an AI company'],
-    branchCount: '6', personaCount: '3'
-  },
-  education: {
-    question: 'Should I continue my PhD program or choose a different path?',
-    facts: ['The Phd is scholarship but it drains me mentally', 'I need some practical knowledge', 'I seem overqualified for the roles i apply to, and underskilled for my desired roles', 'A teacher recommended I dont quit', 'I am unable to publish a paper'],
-    branchCount: '5', personaCount: '4'
-  },
-  investment: {
-    question: 'As a foreigner, should I use my entire savings to buy a house in Kocaeli,Turkey or just keep saving the money till its enough to move to Europe?',
-    facts: ['The House is new and beautiful and within my budget', 'A single earthquake could take it all away', 'It would fast track a citizenship application', 'I have lived in Turkey for 6 years', 'Moving to europe means starting from 0', 'There are better tech jobs in europe', 'There is a possibility of a better life in an english speaking country'],
-    branchCount: '6', personaCount: '4'
-  },
   government: {
     question: 'Should my company expand operations now despite the ongoing war in the Middle East, or wait until regional policies stabilize?',
     facts: ['Conflict has disrupted supply chains', 'Local government is offering tax incentives to attract foreign investment', 'Security costs are rising', 'Analysts warn of prolonged instability', 'Competitors are delaying expansion plans'],
     branchCount: '5', personaCount: '5'
   },
-  gambling: {
-    question: 'Should I place a large bet on the upcoming football match or diversify my wagers across multiple games?',
-    facts: ['I have won small bets consistently', 'My bankroll is limited', 'Odds are heavily favoring one team', 'Experts predict an upset is possible', 'Betting forums suggest spreading risk'],
+  turkey: {
+    question: 'As a foreigner in Turkey, should I use my $50K savings to buy a home or keep the money for relocation to Europe?',
+    facts: ['Buying a home would fast-track Turkish citizenship and give me long-term stability', 'A single major earthquake could destroy the property and my entire savings', 'Moving to Europe means starting from zero — new language, new network, new career', 'I have lived in Turkey for 6 years with an established social and professional network', 'Real estate prices in Kocaeli have risen 40% in the last year, agents say buy now', 'Tech salaries in Europe are 3x higher but so is the cost of living', 'European immigration policies are tightening and visas may be harder to get in 2 years'],
     branchCount: '6', personaCount: '5'
   },
-  marriage: {
-    question: 'Should I marry my long-term partner now or wait until I am more financially stable?',
-    facts: ['We have been together for 7 years', 'My partner wants to start a family soon', 'My income is currently unstable', 'Friends advise not to delay happiness', 'Financial advisors warn about added responsibilities'],
-    branchCount: '5', personaCount: '6'
+  pricing: {
+    question: 'Should I pivot my B2B SaaS from monthly subscriptions to a usage-based pricing model?',
+    facts: ['Current MRR is $45K with 120 customers on monthly plans', 'Churn rate is 8% monthly, mostly from small customers who outgrow their plan', 'Usage-based pricing could increase revenue from power users by 3x', 'Implementation would take 3 months and delay new feature development', 'Sales team is worried unpredictable bills will scare away new customers', 'One competitor switched to usage-based and grew ARR by 60%'],
+    branchCount: '6', personaCount: '4'
+  },
+  capital: {
+    question: 'Should I invest my $100K savings in index funds or use it to start my own business?',
+    facts: ['The stock market has averaged 10% annual returns historically', 'Starting a business has a 50% failure rate in the first year', 'I have 6 months of living expenses saved separately', 'My business idea targets a $500M market growing at 20% YoY', 'I can work on the business part-time while keeping my job for 6 months', 'A financial advisor recommends dollar-cost averaging into index funds'],
+    branchCount: '5', personaCount: '4'
+  },
+  channel: {
+    question: 'Would people react positively or negatively to my talking head YouTube videos about practical AI tutorials?',
+    facts: ['Talking head format is cheaper to produce but some viewers find it less engaging than animations', 'The AI tutorial space is growing but saturated with high-production channels', 'My on-camera presence is authentic but I lack professional video editing skills', 'Educational AI content performs well in the YouTube algorithm during weekdays', 'Developer audiences often prefer concise code tutorials over conceptual explainers'],
+    branchCount: '5', personaCount: '5'
+  },
+  mall: {
+    question: 'How will the local community react to my proposal to turn the abandoned mall into a startup hub?',
+    facts: ['The mall has been vacant for 3 years', 'Local businesses are struggling with foot traffic', 'Residents want more job opportunities', 'City council is offering tax breaks for redevelopment', 'Some neighbors worry about increased traffic and noise'],
+    branchCount: '5', personaCount: '5'
   }
 };
 
@@ -2905,7 +2900,7 @@ form.addEventListener('submit', async e => {
   });
 });
 
-setSample('startup');
+setSample('government');
 setMode('router');
 refreshRuns();
 
