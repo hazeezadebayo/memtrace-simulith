@@ -58,7 +58,7 @@ Three separate LLM call patterns power the system:
 
 Watch Simulith in action — a walkthrough of the platform, simulation engines, and live UI.
 
-[![Watch the demo video](qwen_hackathon/thumbnail.png)](https://github.com/hazeezadebayo/memtrace-simulith/raw/main/memtrace/sw_demo.mp4)
+<video src="memtrace/sw_demo.mp4" controls></video>
 
 ---
 
