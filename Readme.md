@@ -54,6 +54,14 @@ Three separate LLM call patterns power the system:
 
 ---
 
+## 🎥 Demo
+
+Watch Simulith in action — a walkthrough of the platform, simulation engines, and live UI.
+
+<video src="memtrace/sw_demo.mp4" controls width="100%"></video>
+
+---
+
 ## 3. Folder Structure
 
 ```
