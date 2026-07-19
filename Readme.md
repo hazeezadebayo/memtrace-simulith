@@ -58,7 +58,7 @@ Three separate LLM call patterns power the system:
 
 Watch Simulith in action — a walkthrough of the platform, simulation engines, and live UI.
 
-<video src="memtrace/sw_demo.mp4" controls></video>
+[![Watch the demo on YouTube](https://img.youtube.com/vi/UzUKtVRFGIM/0.jpg)](https://www.youtube.com/watch?v=UzUKtVRFGIM)
 
 ---
 
