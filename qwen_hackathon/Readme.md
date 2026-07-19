@@ -65,8 +65,8 @@ Simulith features an orchestration layer that automatically analyzes the query t
 
 Deployed on Alibaba Cloud Simple Application Server (SAS) in the Singapore region via Cloudflare Tunnel. The $40 hackathon coupon funded 6 months of hosting.
 
-![Alibaba Cloud Deployment Proof 1](alibaba_1.png)
-![Alibaba Cloud Deployment Proof 2](alibaba_2.png)
+![Alibaba Cloud Deployment Proof 1](alibaba_proof1.png)
+![Alibaba Cloud Deployment Proof 2](alibaba_proof2.png)
 
 ---
 
