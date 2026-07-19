@@ -1,4 +1,4 @@
-# 🧠 MemTrace & Simulith — Multi-Agent Simulation & Context-Retrieval Platform
+# 🧠 Memtrace-Simulith — Multi-Agent Simulation & Context-Retrieval Platform
 
 **Powered by Qwen Cloud — Built for the Global AI Hackathon Series**
 
