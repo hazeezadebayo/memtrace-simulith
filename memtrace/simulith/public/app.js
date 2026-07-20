@@ -1896,7 +1896,8 @@ async function runRouterScenario() {
     graphDensity: 'ROUTING...',
     scenario: questionInput.value.trim(),
     ...forecasts,
-    orchestrationPhase: 'DYNAMIC ROUTING'
+    orchestrationPhase: 'DYNAMIC ROUTING',
+    durations: []
   };
   updateTelemetryUI(currentTelemetry);
 
@@ -2341,7 +2342,8 @@ async function runDivergenceScenario() {
     graphDensity: 'PARALLEL SYNTHESIS',
     scenario: questionInput.value.trim(),
     ...forecasts,
-    orchestrationPhase: 'PARALLEL EXECUTION'
+    orchestrationPhase: 'PARALLEL EXECUTION',
+    durations: []
   };
   updateTelemetryUI(currentTelemetry);
 
